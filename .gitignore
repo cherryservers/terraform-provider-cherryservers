@@ -1,0 +1,9 @@
+.DS_Store
+main.tf
+terraform.tfplan
+terraform.tfstate*
+examples/
+.terraform/
+plays/
+*.log
+terraform-provider-cherryservers
