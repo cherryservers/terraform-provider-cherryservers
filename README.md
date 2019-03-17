@@ -16,7 +16,24 @@ Requirements
 Building the provider
 ---------------------
 
+Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-cherryservers`
 
+```bash
+$ mkdir -p $GOPATH/src/github.com/terraform-providers; cd $GOPATH/src/github.com/terraform-providers
+$ git clone git@github.com:cherryservers/terraform-provider-cherryservers.git
+```
+
+Enter the provider directory and build provider
+
+```bash
+$ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-cherryservers
+$ go build -o terraform-provider-cherryservers
+```
+
+Using the provider
+------------------
+
+The cherryservers provider will be installed on `terraform init` of a template using any of the cherryservers_* resources.
 
 Usage
 -----
@@ -61,6 +78,7 @@ Those are needed internal module usage, but you may use them for other cases too
 *c*herryservers_server** module needed for adding new bare metal server to your infrastructure.
 
 ```
+# Create a server
 resource "cherryservers_server" "my-dream-server-1" {
     project_id = "79813"
     region = "EU-East-1"
@@ -95,6 +113,7 @@ Those are needed internal module usage, but you may use them for other cases too
 **cherryservers_ip** - module needed for adding new floating IPs to your infrastructure. You may want to order new floating IP address and assign it to bare metal server which will be created just after you order you floating IP.
 
 ```
+# Create an IP address
 resource "cherryservers_ip" "floating-ip1-server-1" {
     project_id = "79813"
     region = "EU-East-1"
@@ -105,6 +124,7 @@ resource "cherryservers_ip" "floating-ip1-server-1" {
 or 
 
 ```
+# Create an IP address
 resource "cherryservers_ip" "floating-ip1-server-1" {
     project_id = "79813"
     region = "EU-East-1"
@@ -115,6 +135,7 @@ resource "cherryservers_ip" "floating-ip1-server-1" {
 or
 
 ```
+# Create an IP address
 resource "cherryservers_ip" "floating-ip1-server-1" {
     project_id = "79813"
     region = "EU-East-1"
