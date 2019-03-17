@@ -30,11 +30,11 @@ export CHERRY_AUTH_TOKEN="4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6d
 Examples
 --------
 
-#### cherryservers_ssh
+#### Resource cherryservers_ssh
 
-*cherryservers_ssh* module needed for adding public SSH keys to your account. After creation of this resource you may add one or more such keys to your newly ordered server resource by passing variable `${cherryservers_ssh.johny.id}` to `cherryservers_server` module`s resource.
+**cherryservers_ssh** module needed for adding public SSH keys to your account. After creation of this resource you may add one or more such keys to your newly ordered server resource by passing variable `${cherryservers_ssh.johny.id}` to `cherryservers_server` module`s resource.
 
-You may update either `name` or `public_key` while forking with your infrastructure file.
+You may update either `name` or `public_key` while working with your infrastructure file.
 
 ```
 resource "cherryservers_ssh" "johny" {
@@ -45,20 +45,20 @@ resource "cherryservers_ssh" "johny" {
 
 ##### Argument Reference
 
-* name - label of new added SSH public key
-* public_key - public key itself. You need to provide path to public key
+* **name** - label of new added SSH public key
+* **public_key** - public key itself. You need to provide path to public key
 
 During ssh addition process, some additional variable will be acquired from API:
 
-* fingerprint - calculated fingerprint of added public ssh key
-* created - the date public SSH key was added
-* updated - the date when public key was updated
+* **fingerprint** - calculated fingerprint of added public ssh key
+* **created** - the date public SSH key was added
+* **updated** - the date when public key was updated
 
 Those are needed internal module usage, but you may use them for other cases too.
 
-#### cherryservers_server
+#### Resource cherryservers_server
 
-*cherryservers_server* module needed for adding new bare metal server to your infrastructure.
+*c*herryservers_server** module needed for adding new bare metal server to your infrastructure.
 
 ```
 resource "cherryservers_server" "my-dream-server-1" {
@@ -73,26 +73,26 @@ resource "cherryservers_server" "my-dream-server-1" {
 
 ##### Argument Reference
 
-* project_id - (requered) ID of project of the servers
-* region - region of the server. (EU-East-1 or EU-West-1) 
-* hostname - define hostname of a server
-* image - image to be installed on the server, e.g. ```Ubuntu 16.04 64bit```
-* plan_id - plan for server creation
-* ssh_keys_ids - SSH key`s ID for adding SSH key to server
-* ip_addresses_ids - list of floating IP addresses UIDs to be added to a new server.
+* **project_id** - (requered) ID of project of the servers
+* **region** - region of the server. (EU-East-1 or EU-West-1) 
+* **hostname** - define hostname of a server
+* **image** - image to be installed on the server, e.g. ```Ubuntu 16.04 64bit```
+* **plan_id** - plan for server creation
+* **ssh_keys_ids** - SSH key`s ID for adding SSH key to server
+* **ip_addresses_ids** - list of floating IP addresses UIDs to be added to a new server.
 
 During server creation process, some additional variable will be acquired from API:
 
-* private_ip - assigned private IP address of a server
-* primary_ip - assigned primary (public) IP address of a server
-* power_state - current power state of a server
-* state - deployment state of a server
+* **private_ip** - assigned private IP address of a server
+* **primary_ip** - assigned primary (public) IP address of a server
+* **power_state** - current power state of a server
+* **state** - deployment state of a server
 
 Those are needed internal module usage, but you may use them for other cases too.
 
-#### cherryservers_ip
+#### Resource cherryservers_ip
 
-*cherryservers_ip* - module needed for adding new floating IPs to your infrastructure. You may want to order new floating IP address and assign it to bare metal server which will be created just after you order you floating IP.
+**cherryservers_ip** - module needed for adding new floating IPs to your infrastructure. You may want to order new floating IP address and assign it to bare metal server which will be created just after you order you floating IP.
 
 ```
 resource "cherryservers_ip" "floating-ip1-server-1" {
@@ -124,19 +124,19 @@ resource "cherryservers_ip" "floating-ip1-server-1" {
 
 ##### Argument Reference
 
-* project_id - ID of project
-* region - region of the server. (EU-East-1 or EU-West-1) 
-* routed_to - you need to specify UID of server`s IP address to which you with to route it to
-* routed_to_hostname - on the other hand, you may specify hostname of server to which you want to route
-* routed_to_ip - or you may want to specify IP address of the serfver to route to
+* **project_id** - ID of project
+* **region** - region of the server. (EU-East-1 or EU-West-1) 
+* **routed_to** - you need to specify UID of server`s IP address to which you with to route it to
+* **routed_to_hostname** - on the other hand, you may specify hostname of server to which you want to route
+* **routed_to_ip** - or you may want to specify IP address of the serfver to route to
 
 During floating IP creation process, some additional variable will be acquired from API:
 
-* cidr - subnet to which IP belongs
-* type - type of IP address, it could be primary, private, floating, subnet etc.
-* gateway - the gateway for newly created IP
-* address - the address itself, you probably will need this for later use
-* a_record - public A record which points to assigned IP address
-* ptr_record - PTR record for IP address
+* **cidr** - subnet to which IP belongs
+* **type** - type of IP address, it could be primary, private, floating, subnet etc.
+* **gateway** - the gateway for newly created IP
+* **address** - the address itself, you probably will need this for later use
+* **a_record** - public A record which points to assigned IP address
+* **ptr_record** - PTR record for IP address
 
 Those are needed internal module usage, but you may use them for other cases too.
