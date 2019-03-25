@@ -1,11 +1,12 @@
 package main
 
 import (
-	"cherrygo"
 	"fmt"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/cherryservers/cherrygo"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )

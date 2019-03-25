@@ -1,8 +1,9 @@
 package main
 
 import (
-	"cherrygo"
 	"strconv"
+
+	"github.com/cherryservers/cherrygo"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )

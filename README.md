@@ -23,6 +23,12 @@ $ mkdir -p $GOPATH/src/github.com/terraform-providers; cd $GOPATH/src/github.com
 $ git clone git@github.com:cherryservers/terraform-provider-cherryservers.git
 ```
 
+You may want to get cherrygo library first:
+
+```bash
+go get github.com/cherryservers/cherrygo
+```
+
 Enter the provider directory and build provider
 
 ```bash
