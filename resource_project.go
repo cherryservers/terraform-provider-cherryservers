@@ -23,7 +23,7 @@ func resourceProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"id": &schema.Schema{
+			"project_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -68,7 +68,7 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("id", project.ID)
+	d.Set("project_id", project.ID)
 	d.Set("name", project.Name)
 
 	return nil
