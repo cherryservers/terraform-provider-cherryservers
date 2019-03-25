@@ -8,9 +8,10 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"cherryservers_server": resourceServer(),
-			"cherryservers_ssh":    resourceSSHKey(),
-			"cherryservers_ip":     resourceIP(),
+			"cherryservers_server":  resourceServer(),
+			"cherryservers_ssh":     resourceSSHKey(),
+			"cherryservers_ip":      resourceIP(),
+			"cherryservers_project": resourceProject(),
 		},
 	}
 }
