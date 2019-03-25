@@ -1,5 +1,5 @@
 .DS_Store
-main.tf
+*.tf
 terraform.tfplan
 terraform.tfstate*
 examples/

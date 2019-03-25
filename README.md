@@ -53,6 +53,23 @@ export CHERRY_AUTH_TOKEN="4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6d
 Examples
 --------
 
+#### Resource cherryservers_project
+
+**cherryservers_project** module needed for creating new project to keep your infrastructure in. You may have several projects for your team with several servers in each.
+
+You may update your project with new `name` while working with your infrastructure file.
+
+```
+resource "cherryservers_project" "DreamProject" {
+    team_id = "28519"
+    name = "DreamProject1"
+}
+```
+
+##### Argument Reference
+* **name** - the name of your project
+* **team_id** - ID of team, project will reside
+
 #### Resource cherryservers_ssh
 
 **cherryservers_ssh** module needed for adding public SSH keys to your account. After creation of this resource you may add one or more such keys to your newly ordered server resource by passing variable `${cherryservers_ssh.johny.id}` to `cherryservers_server` module`s resource.

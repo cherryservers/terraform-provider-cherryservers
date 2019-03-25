@@ -39,13 +39,15 @@ func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	projectName := d.Get("name").(string)
-	teamID := d.Get("team_id").(int)
+	teamID := d.Get("team_id").(string)
 
 	addProjectRequest := cherrygo.CreateProject{
 		Name: projectName,
 	}
 
-	project, _, err := c.Project.Create(teamID, &addProjectRequest)
+	intTeamID, err := strconv.Atoi(teamID)
+
+	project, _, err := c.Project.Create(intTeamID, &addProjectRequest)
 	if err != nil {
 		return err
 	}
