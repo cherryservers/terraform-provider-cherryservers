@@ -185,6 +185,41 @@ During floating IP creation process, some additional variable will be acquired f
 
 Those are needed internal module usage, but you may use them for other cases too.
 
+#### Real world example
+
+Imagine you work at a new project, and want to create a new infrastructure for it, hire new developer and provide him with a new server, which should be reachable with developer`s ssh key and has floating IP address.
+
+In such case you need to create such Terraform scenario:
+
+```
+resource "cherryservers_project" "DreamProject99" {
+    team_id = "28519"
+    name = "DreamProject99"
+}
+
+resource "cherryservers_ssh" "johny-key-1" {
+    name = "johny1"
+    public_key = "${file("path/to/johny.key")}"
+}
+
+resource "cherryservers_ip" "floating-ip-server99" {
+    project_id = "${cherryservers_project.DreamProject99.id}"
+    region = "EU-East-1"
+}
+
+resource "cherryservers_server" "super-server99" {
+    project_id = "${cherryservers_project.DreamProject99.id}"
+    region = "EU-East-1"
+    hostname = "virtual99.turbo.com"
+    image = "Ubuntu 16.04 64bit"
+    plan_id = "165"
+    ssh_keys_ids = ["95", "${cherryservers_ssh.johny-key-1.id}"]
+    ip_addresses_ids = ["${cherryservers_ip.floating-ip-server99.id}"]
+}
+```
+
+As you can see, at first you create new **DreamProject99** project, than you add a **johny-key-1** key to portal, after that you add new floating IP address **floating-ip-server99** to your newly created project **DreamProject99** and after all you creating new server **super-server99**, which will have **johny-key-1** and **floating-ip-server99** assigned to it.
+
 
 ## License
 
