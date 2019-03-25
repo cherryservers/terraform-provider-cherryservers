@@ -184,3 +184,8 @@ During floating IP creation process, some additional variable will be acquired f
 * **ptr_record** - PTR record for IP address
 
 Those are needed internal module usage, but you may use them for other cases too.
+
+
+## License
+
+See the [LICENSE](LICENSE.md) file for license rights and limitations.
