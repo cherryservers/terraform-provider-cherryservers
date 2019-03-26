@@ -13,7 +13,7 @@ Requirements
 -	[Terraform](https://www.terraform.io/downloads.html) 0.10.x
 -	[Go](https://golang.org/doc/install) 1.12 (to build the provider plugin)
 
-Building the provider
+Building Terraform provider
 ---------------------
 
 Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-cherryservers`
@@ -29,22 +29,22 @@ You may want to get cherrygo library first:
 go get github.com/cherryservers/cherrygo
 ```
 
-Enter the provider directory and build provider
+Enter directory path for the Terraform provider and build it
 
 ```bash
 $ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-cherryservers
 $ go build -o terraform-provider-cherryservers
 ```
 
-Using the provider
+Using Terraform provider
 ------------------
 
-The cherryservers provider will be installed on `terraform init` of a template using any of the cherryservers_* resources.
+The Terraform provider will be installed on `terraform init` command from a template by using any of the cherryservers_* resources.
 
 Usage
 -----
 
-The provider should be configured with proper credentials:
+The Terraform provider should be configured with proper credentials:
 
 ```
 export CHERRY_AUTH_TOKEN="4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6dae9b7e03b0"
@@ -55,9 +55,9 @@ Examples
 
 #### Resource cherryservers_project
 
-**cherryservers_project** module needed for creating new project to keep your infrastructure in. You may have several projects for your team with several servers in each.
+**cherryservers_project** module is needed to create a new project in your team. A project consists of the infrastructure you deployed. You may have several projects in a team with several servers within a project.
 
-You may update your project with new `name` while working with your infrastructure file.
+You may update your project with a new `name` while working with your infrastructure file.
 
 ```
 resource "cherryservers_project" "DreamProject" {
@@ -68,11 +68,11 @@ resource "cherryservers_project" "DreamProject" {
 
 ##### Argument Reference
 * **name** - the name of your project
-* **team_id** - ID of team, project will reside
+* **team_id** - ID of the team your project will reside
 
 #### Resource cherryservers_ssh
 
-**cherryservers_ssh** module needed for adding public SSH keys to your account. After creation of this resource you may add one or more such keys to your newly ordered server resource by passing variable `${cherryservers_ssh.johny.id}` to `cherryservers_server` module`s resource.
+**cherryservers_ssh** module needed to add public SSH keys to your account. After creation of this resource you may assign one or more of such keys to your newly ordered server instance by passing variable `${cherryservers_ssh.johny.id}` to `cherryservers_server` module`s resource.
 
 You may update either `name` or `public_key` while working with your infrastructure file.
 
@@ -85,20 +85,20 @@ resource "cherryservers_ssh" "johny" {
 
 ##### Argument Reference
 
-* **name** - label of new added SSH public key
+* **name** - label of your newly added SSH public key
 * **public_key** - public key itself. You need to provide path to public key
 
-During ssh addition process, some additional variable will be acquired from API:
+During ssh addition process, some additional variables will be acquired via API:
 
 * **fingerprint** - calculated fingerprint of added public ssh key
 * **created** - the date public SSH key was added
 * **updated** - the date when public key was updated
 
-Those are needed internal module usage, but you may use them for other cases too.
+These variables are needed for internal usage of the module, but you may use them for other purposes as well.
 
 #### Resource cherryservers_server
 
-*c*herryservers_server** module needed for adding new bare metal server to your infrastructure.
+*c*herryservers_server** module is needed for adding new bare metal servers to your infrastructure.
 
 ```
 # Create a server
@@ -114,26 +114,26 @@ resource "cherryservers_server" "my-dream-server-1" {
 
 ##### Argument Reference
 
-* **project_id** - (requered) ID of project of the servers
-* **region** - region of the server. (EU-East-1 or EU-West-1) 
-* **hostname** - define hostname of a server
-* **image** - image to be installed on the server, e.g. ```Ubuntu 16.04 64bit```
-* **plan_id** - plan for server creation
-* **ssh_keys_ids** - SSH key`s ID for adding SSH key to server
-* **ip_addresses_ids** - list of floating IP addresses UIDs to be added to a new server.
+* **project_id** - your project ID
+* **region** - server region ("EU-East-1" or "EU-West-1") 
+* **hostname** - your defined server hostname
+* **image** - your server image e.g. ```Ubuntu 16.04 64bit```
+* **plan_id** - your server plan ID
+* **ssh_keys_ids** - ID of your SSH key to be assigned to a new server
+* **ip_addresses_ids** - UIDs of your floating IP addresses to be assigned to a new server
 
-During server creation process, some additional variable will be acquired from API:
+During server creation process, some additional variables will be acquired via API:
 
 * **private_ip** - assigned private IP address of a server
 * **primary_ip** - assigned primary (public) IP address of a server
 * **power_state** - current power state of a server
 * **state** - deployment state of a server
 
-Those are needed internal module usage, but you may use them for other cases too.
+These variables are needed for internal usage of the module, but you may use them for other purposes as well.
 
 #### Resource cherryservers_ip
 
-**cherryservers_ip** - module needed for adding new floating IPs to your infrastructure. You may want to order new floating IP address and assign it to bare metal server which will be created just after you order you floating IP.
+**cherryservers_ip** - module needed for adding new floating IPs to your infrastructure. For instance, you may want to order a new floating IP address and assign it to your server instance that will be created right after you order you floating IP.
 
 ```
 # Create an IP address
@@ -168,28 +168,28 @@ resource "cherryservers_ip" "floating-ip1-server-1" {
 
 ##### Argument Reference
 
-* **project_id** - ID of project
-* **region** - region of the server. (EU-East-1 or EU-West-1) 
-* **routed_to** - you need to specify UID of server`s IP address to which you with to route it to
-* **routed_to_hostname** - on the other hand, you may specify hostname of server to which you want to route
-* **routed_to_ip** - or you may want to specify IP address of the serfver to route to
+* **project_id** - project ID
+* **region** - server region ("EU-East-1" or "EU-West-1") 
+* **routed_to** - you need to specify a UID of your server`s primary IP address for routing your floating IP
+* **routed_to_hostname** - you may also specify hostname of server for routing your floating IP
+* **routed_to_ip** - alternativelly, you may specify a static IP address of the server for routing your floating IP
 
-During floating IP creation process, some additional variable will be acquired from API:
+During floating IP creation process, some additional variables will be acquired via API:
 
 * **cidr** - subnet to which IP belongs
-* **type** - type of IP address, it could be primary, private, floating, subnet etc.
+* **type** - type of IP address (e.i. primary, private, floating, subnet etc.)
 * **gateway** - the gateway for newly created IP
-* **address** - the address itself, you probably will need this for later use
-* **a_record** - public A record which points to assigned IP address
+* **address** - the address itself, you will probably need this for later use
+* **a_record** - public A record which points to the assigned IP address
 * **ptr_record** - PTR record for IP address
 
-Those are needed internal module usage, but you may use them for other cases too.
+These variables are needed for internal usage of the module, but you may use them for other purposes as well.
 
 #### Real world example
 
-Imagine you work at a new project, and want to create a new infrastructure for it, hire new developer and provide him with a new server, which should be reachable with developer`s ssh key and has floating IP address.
+Imagine you have started working on a new project and want to create an infrastructure for it. You hire a new developer and provide him with a new server, which has a floating IP assigned and should be reachable with developer`s ssh key.
 
-In such case you need to create such Terraform scenario:
+In such case, you need to create the following Terraform scenario:
 
 ```
 resource "cherryservers_project" "DreamProject99" {
@@ -218,7 +218,7 @@ resource "cherryservers_server" "super-server99" {
 }
 ```
 
-As you can see, at first you create new **DreamProject99** project, than you add a **johny-key-1** key to portal, after that you add new floating IP address **floating-ip-server99** to your newly created project **DreamProject99** and after all you creating new server **super-server99**, which will have **johny-key-1** and **floating-ip-server99** assigned to it.
+As you can see, at first you create new **DreamProject99** project, than you add a **johny-key-1** key to portal, after that you add new floating IP address **floating-ip-server99** to your newly created project **DreamProject99** and then you create a new server **super-server99**, which will have **johny-key-1** and **floating-ip-server99** assigned to it.
 
 
 ## License
