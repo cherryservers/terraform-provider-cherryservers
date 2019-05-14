@@ -1,4 +1,4 @@
-package cherryservers
+package main
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"

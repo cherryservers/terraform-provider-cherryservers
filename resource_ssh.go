@@ -1,4 +1,4 @@
-package cherryservers
+package main
 
 import (
 	"strconv"
