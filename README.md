@@ -20,7 +20,7 @@ Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provi
 
 ```bash
 $ mkdir -p $GOPATH/src/github.com/terraform-providers; cd $GOPATH/src/github.com/terraform-providers
-$ git clone git@github.com:cherryservers/terraform-provider-cherryservers.git
+$ git clone https://github.com/cherryservers/terraform-provider-cherryservers.git
 ```
 
 You may want to get cherrygo library first:
