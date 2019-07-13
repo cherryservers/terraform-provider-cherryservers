@@ -129,7 +129,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	d.SetId(serverID)
 
-	err = waitForNetwork(d, m)
+	err = waitForServer(d, m)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
@@ -206,14 +206,13 @@ func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func waitForNetwork(d *schema.ResourceData, m interface{}) error {
-
+func waitForServer(d *schema.ResourceData, m interface{}) error {
 	c, err := cherrygo.NewClient()
 	if err != nil {
 		return err
 	}
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 100; i++ {
 
 		time.Sleep(time.Second * 6)
 
@@ -222,12 +221,8 @@ func waitForNetwork(d *schema.ResourceData, m interface{}) error {
 			log.Fatalf("Error while listing server: %v", err)
 		}
 
-		for _, ip := range server.IPAddresses {
-			if ip.Type == "primary-ip" {
-				if ip.Address != "" {
-					return nil
-				}
-			}
+		if server.State == "active" {
+			return nil
 		}
 	}
 
