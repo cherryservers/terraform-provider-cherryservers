@@ -3,12 +3,14 @@ package main
 import (
 	"github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/mm0/terraform-provider-cherryservers/cherryservers"
+	//"./cherryservers"
 )
 
 func main() {
 	plugin.Serve(&plugin.ServeOpts{
 		ProviderFunc: func() terraform.ResourceProvider {
-			return Provider()
+			return cherryservers.Provider()
 		},
 	})
 }
