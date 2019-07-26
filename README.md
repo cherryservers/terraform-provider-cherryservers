@@ -39,6 +39,14 @@ $ go build -o terraform-provider-cherryservers
 Using Terraform provider
 ------------------
 
+You may download already builded binaries for your operating system from our mirror:
+
+```
+http://downloads.cherryservers.com/other/terraform/
+```
+
+There are build for Mac, Linux and Windows
+
 The Terraform provider will be installed on `terraform init` command from a template by using any of the cherryservers_* resources.
 
 Usage
@@ -48,6 +56,29 @@ The Terraform provider should be configured with proper credentials:
 
 ```
 export CHERRY_AUTH_TOKEN="4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6dae9b7e03b0"
+```
+
+or 
+
+```
+provider "cherryservers" {
+  auth_token = "4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6dae9b7e03b0"
+}
+```
+
+or even
+
+```
+variable "auth_token" {}
+
+provider "cherryservers" {
+    auth_token = "${var.auth_token}"
+}
+```
+
+provider "cherryservers" {
+  auth_token = "${var.auth_token}"
+}
 ```
 
 Examples
