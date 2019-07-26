@@ -76,6 +76,7 @@ provider "cherryservers" {
 }
 ```
 
+```
 provider "cherryservers" {
   auth_token = "${var.auth_token}"
 }
