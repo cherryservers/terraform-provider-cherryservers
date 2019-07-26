@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 )
 
-// Config for auth var
+// Config for auth variable
 type Config struct {
 	AuthToken string
 }
