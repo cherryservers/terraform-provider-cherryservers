@@ -1,9 +1,10 @@
-package main
+package cherryservers
 
 import (
 	"strconv"
 
 	"github.com/cherryservers/cherrygo"
+
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -33,10 +34,7 @@ func resourceProject() *schema.Resource {
 
 func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectName := d.Get("name").(string)
 	teamID := d.Get("team_id").(string)
@@ -60,10 +58,7 @@ func resourceProjectCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	project, _, err := c.Project.List(d.Id())
 	if err != nil {
@@ -78,10 +73,7 @@ func resourceProjectRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceProjectUpdate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectUpateRequest := cherrygo.UpdateProject{}
 
@@ -91,20 +83,14 @@ func resourceProjectUpdate(d *schema.ResourceData, m interface{}) error {
 
 	}
 
-	_, _, err = c.Project.Update(d.Id(), &projectUpateRequest)
-	if err != nil {
-		return err
-	}
+	c.Project.Update(d.Id(), &projectUpateRequest)
 
 	return resourceProjectRead(d, m)
 }
 
 func resourceProjectDelete(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectDeleteRequest := cherrygo.DeleteProject{ID: d.Id()}
 

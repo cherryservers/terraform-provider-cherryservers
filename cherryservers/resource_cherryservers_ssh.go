@@ -1,4 +1,4 @@
-package main
+package cherryservers
 
 import (
 	"strconv"
@@ -42,10 +42,7 @@ func resourceSSHKey() *schema.Resource {
 
 func resourceSSHKeyCreate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	label := d.Get("name").(string)
 	key := d.Get("public_key").(string)
@@ -68,10 +65,7 @@ func resourceSSHKeyCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceSSHKeyRead(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	sshkey, _, err := c.SSHKey.List(d.Id())
 	if err != nil {
@@ -89,10 +83,7 @@ func resourceSSHKeyRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceSSHKeyUpdate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	sshUpateRequest := cherrygo.UpdateSSHKey{}
 
@@ -107,10 +98,7 @@ func resourceSSHKeyUpdate(d *schema.ResourceData, m interface{}) error {
 		sshUpateRequest.Key = key
 	}
 
-	_, _, err = c.SSHKey.Update(d.Id(), &sshUpateRequest)
-	if err != nil {
-		return err
-	}
+	c.SSHKey.Update(d.Id(), &sshUpateRequest)
 
 	return resourceSSHKeyRead(d, m)
 }

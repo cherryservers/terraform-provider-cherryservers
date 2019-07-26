@@ -1,4 +1,4 @@
-package main
+package cherryservers
 
 import (
 	"fmt"
@@ -77,10 +77,7 @@ func resourceServer() *schema.Resource {
 
 func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectID := d.Get("project_id").(string)
 	hostname := d.Get("hostname").(string)
@@ -139,10 +136,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	server, _, err := c.Server.List(d.Id())
 	if err != nil {
@@ -193,10 +187,7 @@ func resourceServerUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	serverDeleteRequest := cherrygo.DeleteServer{ID: d.Id()}
 
@@ -208,10 +199,7 @@ func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 
 func waitForNetwork(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	for i := 1; i < 10; i++ {
 
@@ -219,7 +207,7 @@ func waitForNetwork(d *schema.ResourceData, m interface{}) error {
 
 		server, _, err := c.Server.List(d.Id())
 		if err != nil {
-			log.Fatalf("Error while listing server: %v", err)
+			err = fmt.Errorf("timed out waiting for active device: %v", d.Id())
 		}
 
 		for _, ip := range server.IPAddresses {
@@ -231,7 +219,7 @@ func waitForNetwork(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	err = fmt.Errorf("timed out waiting for active device: %v", d.Id())
+	err := fmt.Errorf("timed out waiting for active device: %v", d.Id())
 
 	return err
 }
