@@ -71,6 +71,14 @@ func resourceServer() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"user_data": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -86,6 +94,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 	planID := d.Get("plan_id").(string)
 	sshKeys1 := d.Get("ssh_keys_ids").([]interface{})
 	ipAddresses := d.Get("ip_addresses_ids").([]interface{})
+	userData := d.Get("user_data").(string)
 
 	//var sshKeysArr []string
 	var sshKeysArr = make([]string, 0)
@@ -115,6 +124,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 		SSHKeys:     sshKeysArr,
 		IPAddresses: ipAddressesArr,
 		PlanID:      planID,
+		UserData:    userData,
 	}
 
 	server, _, err := c.Server.Create(projectID, &addServerRequest)
