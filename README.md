@@ -140,6 +140,7 @@ resource "cherryservers_server" "my-dream-server-1" {
     hostname = "dream-server-1.example.com"
     image = "Ubuntu 16.04 64bit"
     plan_id = "86"
+    user_data = "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlczoKICAtIGlmdG9wCiAgLSBubW9uCg=="
     ssh_keys_ids = ["95"]
 }
 ```
@@ -153,6 +154,7 @@ resource "cherryservers_server" "my-dream-server-1" {
 * **plan_id** - your server plan ID
 * **ssh_keys_ids** - ID of your SSH key to be assigned to a new server
 * **ip_addresses_ids** - UIDs of your floating IP addresses to be assigned to a new server
+* **user_data** - base64 encoded User-Data blob. It should be either bash or cloud-config script.
 
 During server creation process, some additional variables will be acquired via API:
 
