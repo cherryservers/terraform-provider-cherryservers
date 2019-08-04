@@ -122,7 +122,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	server, _, err := c.Server.Create(projectID, &addServerRequest)
 	if err != nil {
-		log.Fatal("Error while creating new server: ", err)
+		log.Printf("Error while creating new server: %#v", err)
 	}
 
 	serverID := strconv.Itoa(server.ID)
@@ -131,7 +131,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	err = waitForNetwork(d, m)
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Printf("Error: %v", err)
 	}
 
 	return resourceServerRead(d, m)
@@ -146,7 +146,7 @@ func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 
 	server, _, err := c.Server.List(d.Id())
 	if err != nil {
-		log.Fatalf("Error while listing server: %v", err)
+		log.Printf("Error while listing server: %v", err)
 	}
 
 	// If the server doesn't have any IPs or it's in terminating
@@ -171,7 +171,7 @@ func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 
 	srvPower, _, err := c.Server.PowerState(d.Id())
 	if err != nil {
-		log.Fatalf("Error while getting power sstate: %v", err)
+		log.Printf("Error while getting power sstate: %v", err)
 	}
 
 	d.Set("name", server.Name)
@@ -219,7 +219,7 @@ func waitForNetwork(d *schema.ResourceData, m interface{}) error {
 
 		server, _, err := c.Server.List(d.Id())
 		if err != nil {
-			log.Fatalf("Error while listing server: %v", err)
+			log.Printf("Error while listing server: %v", err)
 		}
 
 		for _, ip := range server.IPAddresses {

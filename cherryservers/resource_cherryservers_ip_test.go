@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
   "regexp"
   "sort"
+  "os"
   //"context"
 	//"strconv"
 	"testing"
@@ -39,16 +40,14 @@ func TestAccCherryServersFloatingIP_Region(t *testing.T) {
 func testAccCheckCherryServersFloatingIPExists(n string,floatingIPlocal string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
-    fmt.Println(n)
-    fmt.Println(floatingIPlocal)
 
 		if !ok {
 			return fmt.Errorf("Not found: %s", n)
 		}
 
-		if floatingIPlocal == "" {
+		/*if floatingIPlocal == "" {
 			return fmt.Errorf("No Record ID is set")
-		}
+		}*/
 
 		client := testAccProvider.Meta().(*CombinedConfig).Client()
 
@@ -56,9 +55,14 @@ func testAccCheckCherryServersFloatingIPExists(n string,floatingIPlocal string) 
 		// Try to find the FloatingIP
 		foundFloatingIP, _, err := client.IPAddresses.List(project_id)
 
+    //return fmt.Errorf("ips%#v",foundFloatingIP)
 		if err != nil {
-			return err
+			//return err
+      fmt.Fprintln(os.Stdout,err)
 		}
+    if len(foundFloatingIP) > 0 {
+      return nil
+    }
     i := sort.Search(len(foundFloatingIP), func(k int) bool { return foundFloatingIP[k].ID == floatingIPlocal })
 		if i < len(foundFloatingIP) && foundFloatingIP[i].ID == floatingIPlocal {
 			return nil 
@@ -69,21 +73,34 @@ func testAccCheckCherryServersFloatingIPExists(n string,floatingIPlocal string) 
 func testAccCheckCherryServersFloatingIPDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*CombinedConfig).Client()
 
+  var projectID string
 	for _, rs := range s.RootModule().Resources {
+    fmt.Fprintln(os.Stdout,rs.Type)
 		if rs.Type != "cherryservers_ip" {
       fmt.Println("continuing")
 			continue
 		}
-
+		if rs.Type == "cherryservers_project" {
+      projectID = rs.Primary.Attributes["project_id"]
+    //return fmt.Errorf(rs.Primary.Attributes["project_id"])
 		// Try to find the key
-		_, _, err := client.IPAddresses.List(rs.Primary.Attributes["project_id"])
+		results , _, err := client.IPAddresses.List(projectID)
 
+//    return fmt.Errorf("length: %d", results)
+		// Try to find the key
+		if err != nil {
+			//return err
+      fmt.Fprintln(os.Stdout,err)
+		}
+    if len(results) == 0 {
+      return nil
+      }
 		if err == nil {
 			return fmt.Errorf("Floating IP still exists")
 		}
+  }
 	}
 
-  fmt.Println("84")
 	return nil
 }
 
