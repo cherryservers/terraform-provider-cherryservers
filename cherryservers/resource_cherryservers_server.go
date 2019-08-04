@@ -71,16 +71,21 @@ func resourceServer() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"user_data": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
 
 func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectID := d.Get("project_id").(string)
 	hostname := d.Get("hostname").(string)
@@ -89,6 +94,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 	planID := d.Get("plan_id").(string)
 	sshKeys1 := d.Get("ssh_keys_ids").([]interface{})
 	ipAddresses := d.Get("ip_addresses_ids").([]interface{})
+	userData := d.Get("user_data").(string)
 
 	//var sshKeysArr []string
 	var sshKeysArr = make([]string, 0)
@@ -118,6 +124,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 		SSHKeys:     sshKeysArr,
 		IPAddresses: ipAddressesArr,
 		PlanID:      planID,
+		UserData:    userData,
 	}
 
 	server, _, err := c.Server.Create(projectID, &addServerRequest)
@@ -129,7 +136,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	d.SetId(serverID)
 
-	err = waitForNetwork(d, m)
+	err = waitForServer(d, m)
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
@@ -139,10 +146,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	server, _, err := c.Server.List(d.Id())
 	if err != nil {
@@ -193,10 +197,7 @@ func resourceServerUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	serverDeleteRequest := cherrygo.DeleteServer{ID: d.Id()}
 
@@ -206,32 +207,32 @@ func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func waitForNetwork(d *schema.ResourceData, m interface{}) error {
+func waitForServer(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 300; i++ {
 
-		time.Sleep(time.Second * 6)
+		time.Sleep(time.Second * 10)
 
 		server, _, err := c.Server.List(d.Id())
 		if err != nil {
-			log.Printf("Error while listing server: %v", err)
+			err = fmt.Errorf("timed out waiting for active device: %v", d.Id())
 		}
 
 		for _, ip := range server.IPAddresses {
 			if ip.Type == "primary-ip" {
 				if ip.Address != "" {
-					return nil
+					if server.State == "active" {
+						return nil
+					}
+
 				}
 			}
 		}
 	}
 
-	err = fmt.Errorf("timed out waiting for active device: %v", d.Id())
+	err := fmt.Errorf("timed out waiting for active device: %v", d.Id())
 
 	return err
 }

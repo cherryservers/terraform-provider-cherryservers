@@ -6,16 +6,17 @@ import (
 )
 
 // Provider init
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"token": {
+			"auth_token": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("CHERRY_AUTH_TOKEN", nil),
-				Description: "The token key for API operations.",
+				Description: "The API token",
 			},
 		},
+
 		ResourcesMap: map[string]*schema.Resource{
 			"cherryservers_server":  resourceServer(),
 			"cherryservers_ssh":     resourceSSHKey(),
@@ -28,7 +29,7 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
-		Token: d.Get("token").(string),
+		AuthToken: d.Get("auth_token").(string),
 	}
-	return config.Client()
+	return config.Client(), nil
 }

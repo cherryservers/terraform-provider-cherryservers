@@ -65,16 +65,13 @@ func resourceIP() *schema.Resource {
 	}
 }
 
-func getIDForServerIP(d *schema.ResourceData) (string, error) {
+func getIDForServerIP(d *schema.ResourceData, m interface{}) (string, error) {
 
 	projectID := d.Get("project_id").(string)
 	routeToHostname := d.Get("routed_to_hostname").(string)
 	routeToIP := d.Get("routed_to_ip").(string)
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return "", err
-	}
+	c := m.(*cherrygo.Client)
 
 	servers, _, err := c.Servers.List(projectID)
 	if err != nil {
@@ -116,10 +113,7 @@ func getIDForServerIP(d *schema.ResourceData) (string, error) {
 
 func resourceIPCreate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectID := d.Get("project_id").(string)
 	aRecord := d.Get("a_record").(string)
@@ -148,10 +142,7 @@ func resourceIPCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceIPRead(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectID := d.Get("project_id").(string)
 
@@ -174,10 +165,11 @@ func resourceIPRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceIPUpdate(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	// c, err := cherrygo.NewClient()
+	// if err != nil {
+	// 	return err
+	// }
+	c := m.(*cherrygo.Client)
 
 	projectID := d.Get("project_id").(string)
 
@@ -194,27 +186,21 @@ func resourceIPUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if d.HasChange("routed_to_hostname") {
-		routedTo, err := getIDForServerIP(d)
+		routedTo, err := getIDForServerIP(d, m)
 		if err != nil {
 			log.Fatalf("Error while gering IP address ID from hostname: %v", err)
 		}
 		updateIPRequest.RoutedTo = routedTo
 	}
 
-	_, _, err = c.IPAddress.Update(projectID, d.Id(), &updateIPRequest)
-	if err != nil {
-		log.Fatalf("Error while updating floating IP address: %v", err)
-	}
+	c.IPAddress.Update(projectID, d.Id(), &updateIPRequest)
 
 	return resourceIPRead(d, m)
 }
 
 func resourceIPDelete(d *schema.ResourceData, m interface{}) error {
 
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c := m.(*cherrygo.Client)
 
 	projectID := d.Get("project_id").(string)
 
