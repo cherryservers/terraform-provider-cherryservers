@@ -13,7 +13,6 @@ import (
 func TestAccCherryServersProject_Basic(t *testing.T) {
 	var projectName = "test_project_" + acctest.RandString(5)
 	projectTF := fmt.Sprintf(testAccCheckCherryServersProjectConfigBasic, projectName, teamID)
-	fmt.Println(projectName)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
