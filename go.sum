@@ -54,6 +54,8 @@ github.com/bsm/go-vlq v0.0.0-20150828105119-ec6e8d4f5f4e/go.mod h1:N+BjUcTjSxc2m
 github.com/cheggaaa/pb v1.0.27/go.mod h1:pQciLPpbU0oxA0h+VJYYLxO+XeDQb5pZijXscXHm81s=
 github.com/cherryservers/cherrygo v0.0.0-20190325134829-23401764c272 h1:qJhB9IwXmYnJca/MkK++dat0jyllRkzCOI2XfQ0nEY4=
 github.com/cherryservers/cherrygo v0.0.0-20190325134829-23401764c272/go.mod h1:bIjHwQGKgXs2chXq9AZouU42yPkYc/Mseqg9K/KhzEM=
+github.com/cherryservers/cherrygo v0.0.0-20190801131840-d8c1476b968d h1:sIHNykItoB6czvIPUHzNJ1z3oTTGCsff7mJ4Pz4S5YA=
+github.com/cherryservers/cherrygo v0.0.0-20190801131840-d8c1476b968d/go.mod h1:bIjHwQGKgXs2chXq9AZouU42yPkYc/Mseqg9K/KhzEM=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20161106042343-c914be64f07d/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=

@@ -1,58 +1,60 @@
 package cherryservers
+
 import (
 	"fmt"
-  "strconv"
-  //"github.com/cherryservers/cherrygo"
+	"strconv"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"testing"
 )
-func TestAccCherryServersProject_Basic(t *testing.T){
-  var teamID = "35587"
-	projectName := fmt.Sprintf(testAccCheckCherryServersProjectConfig_basic, "test_project_"+acctest.RandString(5),teamID)
-  fmt.Println(projectName)
+
+func TestAccCherryServersProject_Basic(t *testing.T) {
+	var projectName = "test_project_" + acctest.RandString(5)
+	projectTF := fmt.Sprintf(testAccCheckCherryServersProjectConfigBasic, projectName, teamID)
+	fmt.Println(projectName)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCherryServersProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: projectName,
-	/*			Check: resource.ComposeTestCheckFunc(
+				Config: projectTF,
+				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCherryServersProjectExists("cherryservers_project.foobar"),
 					//testAccCheckCherryServersProjectAttributes(projectName),
 					resource.TestCheckResourceAttr(
 						"cherryservers_project.foobar", "name", projectName),
 					resource.TestCheckResourceAttr(
-						"cherryservers_project.foobar", "href", "192.168.0.10"),
-				),*/
+						"cherryservers_project.foobar", "team_id", teamID),
+				),
 			},
 		},
 	})
 }
 
 func testAccCheckCherryServersProjectDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*CombinedConfig).Client()
+	client, _ := testAccProvider.Meta().(*Config).Client()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "cherryservers_project" {
 			continue
 		}
 
-    id, converr := strconv.Atoi(rs.Primary.Attributes["team_id"])
+		id, converr := strconv.Atoi(rs.Primary.Attributes["team_id"])
 		if converr != nil {
 			return fmt.Errorf("Unable to convert Project ID")
 		}
 		// Try to find the domain
-		res, _, err := client.Projects.List(id)
+		res, _, err := client.client.Projects.List(id)
 
 		if err != nil {
-			return fmt.Errorf("Project listing error: %#v",err)
+			return fmt.Errorf("Project listing error: %#v", err)
 		}
-    if len(res) == 0 {
-      return nil
-    }
+		if len(res) == 0 {
+			return nil
+		}
 	}
 
 	return nil
@@ -71,38 +73,36 @@ func testAccCheckCherryServersProjectExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
-    return fmt.Errorf("found %#v",rs)
 		if !ok {
 			return fmt.Errorf("Not found: %s", n)
 		}
-
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No Record ID is set")
 		}
-
-		client := testAccProvider.Meta().(*CombinedConfig).Client()
-    id, converr := strconv.Atoi(rs.Primary.ID)
+		client, _ := testAccProvider.Meta().(*Config).Client()
+		projectID, converr := strconv.Atoi(rs.Primary.ID)
+		teamIDstr, converr2 := strconv.Atoi(teamID)
 		if converr != nil {
 			return fmt.Errorf("Unable to convert Project ID")
 		}
-		// Try to find the domain
-
-		foundDomain, _, err := client.Projects.List(id)
-
-    return fmt.Errorf("found %#v",foundDomain)
+		if converr2 != nil {
+			return fmt.Errorf("Unable to convert Team ID")
+		}
+		// Try to find the project id
+		foundDomain, _, err := client.client.Projects.List(teamIDstr)
 		if err != nil {
 			return err
 		}
-    fmt.Println(foundDomain)
-
-		//if foundDomain.Name != rs.Primary.ID {
-		//	return fmt.Errorf("Record not found")
-		//}
-
-		return nil
+		for _, project := range foundDomain {
+			if project.ID == projectID {
+				return nil
+			}
+		}
+		return fmt.Errorf("Project Record not found")
 	}
 }
-const testAccCheckCherryServersProjectConfig_basic = `
+
+const testAccCheckCherryServersProjectConfigBasic = `
 resource "cherryservers_project" "foobar" {
   name = "%s"
   team_id = "%s"

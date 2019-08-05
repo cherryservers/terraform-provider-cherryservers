@@ -4,13 +4,13 @@ import (
 	"os"
 	"testing"
 
-	//	"github.com/hashicorp/terraform/config"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
+var teamID = "35587"
 
 func init() {
 	testAccProvider = Provider().(*schema.Provider)

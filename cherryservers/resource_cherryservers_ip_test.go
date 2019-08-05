@@ -2,21 +2,18 @@ package cherryservers
 
 import (
 	"fmt"
-  //"github.com/cherryservers/cherrygo"
-//	"github.com/hashicorp/terraform/helper/acctest"
+	"regexp"
+	"strconv"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-  "regexp"
-  "sort"
-  "os"
-  //"context"
-	//"strconv"
-	"testing"
 )
-var teamID = "35587"
-var floatingIP string
 
-func TestAccCherryServersFloatingIP_Region(t *testing.T) {
+var floatingIP string
+var projectID string
+
+func TestAccCherryServersFloatingIPBasic(t *testing.T) {
 
 	expectedURNRegEx, _ := regexp.Compile(`(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`)
 
@@ -26,93 +23,77 @@ func TestAccCherryServersFloatingIP_Region(t *testing.T) {
 		CheckDestroy: testAccCheckCherryServersFloatingIPDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckCherryServersFloatingIPConfig_basic(),
+				Config: testAccCheckCherryServersFloatingIPConfigBasic(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCherryServersFloatingIPExists("cherryservers_ip.foobar", floatingIP),
+					testAccCheckCherryServersFloatingIPExists("cherryservers_ip.foobar"),
 					resource.TestCheckResourceAttr(
 						"cherryservers_ip.foobar", "region", "EU-East-1"),
+					resource.TestCheckResourceAttrSet(
+						"cherryservers_ip.foobar", "project_id"),
 					resource.TestMatchResourceAttr("cherryservers_ip.foobar", "address", expectedURNRegEx),
 				),
 			},
 		},
 	})
 }
-func testAccCheckCherryServersFloatingIPExists(n string,floatingIPlocal string) resource.TestCheckFunc {
+func testAccCheckCherryServersFloatingIPExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
 		if !ok {
 			return fmt.Errorf("Not found: %s", n)
 		}
-
-		/*if floatingIPlocal == "" {
-			return fmt.Errorf("No Record ID is set")
-		}*/
-
-		client := testAccProvider.Meta().(*CombinedConfig).Client()
-
-    project_id := rs.Primary.Attributes["project_id"]
+		client, _ := testAccProvider.Meta().(*Config).Client()
+		projectID = rs.Primary.Attributes["project_id"]
 		// Try to find the FloatingIP
-		foundFloatingIP, _, err := client.IPAddresses.List(project_id)
-
-    //return fmt.Errorf("ips%#v",foundFloatingIP)
+		foundFloatingIP, _, err := client.client.IPAddresses.List(projectID)
 		if err != nil {
-			//return err
-      fmt.Fprintln(os.Stdout,err)
+			return err
 		}
-    if len(foundFloatingIP) > 0 {
-      return nil
-    }
-    i := sort.Search(len(foundFloatingIP), func(k int) bool { return foundFloatingIP[k].ID == floatingIPlocal })
-		if i < len(foundFloatingIP) && foundFloatingIP[i].ID == floatingIPlocal {
-			return nil 
+		if len(foundFloatingIP) == 1 {
+			floatingIP = foundFloatingIP[0].Address
+			return nil
 		}
-    return fmt.Errorf("Record not found")
+		return fmt.Errorf("IP not found")
 	}
 }
 func testAccCheckCherryServersFloatingIPDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*CombinedConfig).Client()
+	client, _ := testAccProvider.Meta().(*Config).Client()
+	teamIDstr, converr2 := strconv.Atoi(teamID)
 
-  var projectID string
-	for _, rs := range s.RootModule().Resources {
-    fmt.Fprintln(os.Stdout,rs.Type)
-		if rs.Type != "cherryservers_ip" {
-      fmt.Println("continuing")
-			continue
-		}
-		if rs.Type == "cherryservers_project" {
-      projectID = rs.Primary.Attributes["project_id"]
-    //return fmt.Errorf(rs.Primary.Attributes["project_id"])
-		// Try to find the key
-		results , _, err := client.IPAddresses.List(projectID)
-
-//    return fmt.Errorf("length: %d", results)
-		// Try to find the key
-		if err != nil {
-			//return err
-      fmt.Fprintln(os.Stdout,err)
-		}
-    if len(results) == 0 {
-      return nil
-      }
-		if err == nil {
-			return fmt.Errorf("Floating IP still exists")
-		}
-  }
+	projects, _, err := client.client.Projects.List(teamIDstr)
+	if converr2 != nil {
+		return fmt.Errorf("Unable to convert Team ID")
 	}
-
+	if err != nil {
+		return err
+	}
+	for _, rs := range projects {
+		if strconv.Itoa(rs.ID) == projectID {
+			results, _, err := client.client.IPAddresses.List(projectID)
+			if len(results) == 0 {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if len(results) != 0 {
+				return fmt.Errorf("Floating IP still exists")
+			}
+		}
+	}
 	return nil
 }
 
-func testAccCheckCherryServersFloatingIPConfig_basic() string {
+func testAccCheckCherryServersFloatingIPConfigBasic() string {
 	res := fmt.Sprintf(`
 resource "cherryservers_project" "myproject" {
-  team_id = "%v"
-  name = "foobar-project"
+  team_id = "%s"
+  name = "foobar-project-2"
 }
 resource "cherryservers_ip" "foobar" {
   project_id = "${cherryservers_project.myproject.id}"
   region = "EU-East-1"
-}`,teamID)
+}`, teamID)
 	return res
 }

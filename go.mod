@@ -1,56 +1,7 @@
 module github.com/mm0/terraform-provider-cherryservers
 
 require (
-	cloud.google.com/go v0.36.0
-	github.com/agext/levenshtein v1.2.2
-	github.com/apparentlymart/go-cidr v1.0.0
-	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/aws/aws-sdk-go v1.20.19
-	github.com/blang/semver v3.5.1+incompatible
-	github.com/cherryservers/cherrygo v0.0.0-20190325134829-23401764c272
-	github.com/davecgh/go-spew v1.1.1
-	github.com/golang/protobuf v1.3.0
-	github.com/google/go-cmp v0.3.0
-	github.com/googleapis/gax-go/v2 v2.0.3
-	github.com/hashicorp/errwrap v1.0.0
+	github.com/cherryservers/cherrygo v0.0.0-20190801131840-d8c1476b968d
 	github.com/hashicorp/go-cleanhttp v0.5.0
-	github.com/hashicorp/go-getter v1.3.1-0.20190627223108-da0323b9545e
-	github.com/hashicorp/go-hclog v0.0.0-20181001195459-61d530d6c27f
-	github.com/hashicorp/go-multierror v1.0.0
-	github.com/hashicorp/go-plugin v1.0.1-0.20190610192547-a1bc61569a26
-	github.com/hashicorp/go-uuid v1.0.1
-	github.com/hashicorp/go-version v1.1.0
-	github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f
-	github.com/hashicorp/hcl2 v0.0.0-20190702185634-5b39d9ff3a9a
-	github.com/hashicorp/hil v0.0.0-20190212112733-ab17b08d6590
-	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform v0.12.5
-	github.com/hashicorp/terraform-config-inspect v0.0.0-20190327195015-8022a2663a70
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
-	github.com/mattn/go-colorable v0.1.1
-	github.com/mattn/go-isatty v0.0.5
-	github.com/mitchellh/cli v1.0.0
-	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
-	github.com/mitchellh/copystructure v1.0.0
-	github.com/mitchellh/go-homedir v1.0.0
-	github.com/mitchellh/go-wordwrap v1.0.0
-	github.com/mitchellh/hashstructure v1.0.0
-	github.com/mitchellh/mapstructure v1.1.2
-	github.com/mitchellh/reflectwalk v1.0.0
-	github.com/satori/go.uuid v1.2.0
-	github.com/spf13/afero v1.2.1
-	github.com/ulikunitz/xz v0.5.5
-	github.com/vmihailenco/msgpack v4.0.1+incompatible
-	github.com/zclconf/go-cty v1.0.1-0.20190708163926-19588f92a98f
-	github.com/zclconf/go-cty-yaml v0.1.0
-	go.opencensus.io v0.18.0
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
-	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab
-	golang.org/x/oauth2 v0.0.0-20190220154721-9b3c75971fc9
-	golang.org/x/sys v0.0.0-20190502175342-a43fa875dd82
-	golang.org/x/text v0.3.2
-	google.golang.org/api v0.1.0
-	google.golang.org/appengine v1.4.0
-	google.golang.org/genproto v0.0.0-20190201180003-4b09977fb922
-	google.golang.org/grpc v1.18.0
 )

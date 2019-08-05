@@ -6,7 +6,7 @@ import (
 )
 
 // Provider init
-func Provider() *schema.Provider {
+func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"auth_token": {
@@ -31,5 +31,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
 		AuthToken: d.Get("auth_token").(string),
 	}
-	return config.Client(), nil
+	//c, err := config.Client()
+	return &config, nil
 }

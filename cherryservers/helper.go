@@ -12,8 +12,21 @@ type Config struct {
 }
 
 // Client return client
-func (c *Config) Client() *cherrygo.Client {
-	client := cleanhttp.DefaultClient()
+func (c *CombinedConfig) Client() *cherrygo.Client {
+	return c.client
+}
 
-	return cherrygo.NewClientWithAuthVar(client, c.AuthToken)
+// CombinedConfig including client and auth_token
+type CombinedConfig struct {
+	client    *cherrygo.Client
+	AuthToken string
+}
+
+// Client returns CombinedConfig
+func (c *Config) Client() (*CombinedConfig, error) {
+	client := cleanhttp.DefaultClient()
+	cherryClient := cherrygo.NewClientWithAuthVar(client, c.AuthToken)
+	return &CombinedConfig{
+		client:    cherryClient,
+		AuthToken: c.AuthToken}, nil
 }

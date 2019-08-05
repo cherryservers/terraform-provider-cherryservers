@@ -139,6 +139,18 @@ if err != nil {
 }
 ```
 
+## Debug
+
+In case you want to debug this library and get requests and responses from API you need to export CHERRY_DEBUG variable
+```
+export CHERRY_DEBUG="true"
+```
+
+When you done, just unset that variable:
+```
+unset CHERRY_DEBUG
+```
+
 ## License
 
 See the [LICENSE](LICENSE.md) file for license rights and limitations.

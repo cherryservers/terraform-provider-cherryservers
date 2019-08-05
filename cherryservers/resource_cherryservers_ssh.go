@@ -42,7 +42,7 @@ func resourceSSHKey() *schema.Resource {
 
 func resourceSSHKeyCreate(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	label := d.Get("name").(string)
 	key := d.Get("public_key").(string)
@@ -52,7 +52,7 @@ func resourceSSHKeyCreate(d *schema.ResourceData, m interface{}) error {
 		Key:   key,
 	}
 
-	sshkey, _, err := c.SSHKey.Create(&sshCreateRequest)
+	sshkey, _, err := c.client.SSHKey.Create(&sshCreateRequest)
 	if err != nil {
 		return err
 	}
@@ -65,9 +65,9 @@ func resourceSSHKeyCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceSSHKeyRead(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
-	sshkey, _, err := c.SSHKey.List(d.Id())
+	sshkey, _, err := c.client.SSHKey.List(d.Id())
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func resourceSSHKeyRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceSSHKeyUpdate(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	sshUpateRequest := cherrygo.UpdateSSHKey{}
 
@@ -98,21 +98,17 @@ func resourceSSHKeyUpdate(d *schema.ResourceData, m interface{}) error {
 		sshUpateRequest.Key = key
 	}
 
-	c.SSHKey.Update(d.Id(), &sshUpateRequest)
+	c.client.SSHKey.Update(d.Id(), &sshUpateRequest)
 
 	return resourceSSHKeyRead(d, m)
 }
 
 func resourceSSHKeyDelete(d *schema.ResourceData, m interface{}) error {
-
-	c, err := cherrygo.NewClient()
-	if err != nil {
-		return err
-	}
+	c, _ := m.(*Config).Client()
 
 	sshDeleteRequest := cherrygo.DeleteSSHKey{ID: d.Id()}
 
-	c.SSHKey.Delete(&sshDeleteRequest)
+	c.client.SSHKey.Delete(&sshDeleteRequest)
 
 	d.SetId("")
 	return nil

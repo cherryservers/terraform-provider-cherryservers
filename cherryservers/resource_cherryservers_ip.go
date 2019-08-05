@@ -113,7 +113,7 @@ func getIDForServerIP(d *schema.ResourceData, m interface{}) (string, error) {
 
 func resourceIPCreate(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	projectID := d.Get("project_id").(string)
 	aRecord := d.Get("a_record").(string)
@@ -128,7 +128,7 @@ func resourceIPCreate(d *schema.ResourceData, m interface{}) error {
 		RoutedTo:  routedTo,
 	}
 
-	ipAddress, _, err := c.IPAddress.Create(projectID, &addIPRequest)
+	ipAddress, _, err := c.client.IPAddress.Create(projectID, &addIPRequest)
 	if err != nil {
 		return err
 	}
@@ -142,11 +142,11 @@ func resourceIPCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceIPRead(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	projectID := d.Get("project_id").(string)
 
-	ipAddress, _, err := c.IPAddress.List(projectID, d.Id())
+	ipAddress, _, err := c.client.IPAddress.List(projectID, d.Id())
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func resourceIPUpdate(d *schema.ResourceData, m interface{}) error {
 	// if err != nil {
 	// 	return err
 	// }
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	projectID := d.Get("project_id").(string)
 
@@ -193,20 +193,20 @@ func resourceIPUpdate(d *schema.ResourceData, m interface{}) error {
 		updateIPRequest.RoutedTo = routedTo
 	}
 
-	c.IPAddress.Update(projectID, d.Id(), &updateIPRequest)
+	c.client.IPAddress.Update(projectID, d.Id(), &updateIPRequest)
 
 	return resourceIPRead(d, m)
 }
 
 func resourceIPDelete(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	projectID := d.Get("project_id").(string)
 
 	ipDeleteRequest := cherrygo.RemoveIPAddress{ID: d.Id()}
 
-	c.IPAddress.Remove(projectID, &ipDeleteRequest)
+	c.client.IPAddress.Remove(projectID, &ipDeleteRequest)
 
 	d.SetId("")
 	return nil

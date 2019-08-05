@@ -2,10 +2,12 @@ package cherryservers
 
 import (
 	"fmt"
+
 	"github.com/cherryservers/cherrygo"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+
 	//"os"
 	"sort"
 	"strconv"
@@ -26,7 +28,7 @@ func TestAccCherryServersSSHKey_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckCherryServersSSHKeyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckCherryServersSSHKeyConfig_basic(rInt, publicKeyMaterial),
+				Config: testAccCheckCherryServersSSHKeyConfigBasic(rInt, publicKeyMaterial),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCherryServersSSHKeyExists("cherryservers_ssh.foobar", &key),
 					resource.TestCheckResourceAttr(
@@ -39,7 +41,7 @@ func TestAccCherryServersSSHKey_Basic(t *testing.T) {
 	})
 }
 func testAccCheckCherryServersSSHKeyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*CombinedConfig).Client()
+	client, _ := testAccProvider.Meta().(*Config).Client()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "cherryservers_ssh" {
@@ -52,7 +54,7 @@ func testAccCheckCherryServersSSHKeyDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the key
-		list, _, err := client.SSHKeys.List()
+		list, _, err := client.client.SSHKeys.List()
 		i := sort.Search(len(list), func(k int) bool { return list[k].ID == id })
 		if i < len(list) && list[i].ID == id {
 			return fmt.Errorf("SSH key still exists")
@@ -77,7 +79,7 @@ func testAccCheckCherryServersSSHKeyExists(n string, key *cherrygo.SSHKey) resou
 			return fmt.Errorf("No Record ID is set")
 		}
 
-		client := testAccProvider.Meta().(*CombinedConfig).Client()
+		client, _ := testAccProvider.Meta().(*Config).Client()
 
 		id, err := strconv.Atoi(rs.Primary.ID)
 		if err != nil {
@@ -85,28 +87,18 @@ func testAccCheckCherryServersSSHKeyExists(n string, key *cherrygo.SSHKey) resou
 		}
 
 		// Try to find the key
-		list, _, err := client.SSHKeys.List()
+		list, _, err := client.client.SSHKeys.List()
 		i := sort.Search(len(list), func(k int) bool { return list[k].ID == id })
 		if i < len(list) && list[i].ID == id {
 			return nil
 		}
-
 		if err != nil {
 			return err
 		}
-
-		/*if strconv.Itoa(foundKey.ID) != rs.Primary.ID {
-			return fmt.Errorf("Record not found")
-		}
-		*/
 		return fmt.Errorf("Record not found")
-
-		//*key = *foundKey
-
-		return nil
 	}
 }
-func testAccCheckCherryServersSSHKeyConfig_basic(rInt int, key string) string {
+func testAccCheckCherryServersSSHKeyConfigBasic(rInt int, key string) string {
 	res := fmt.Sprintf(`
 resource "cherryservers_ssh" "foobar" {
     name = "foobar-%v"
