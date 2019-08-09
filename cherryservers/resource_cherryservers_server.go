@@ -85,7 +85,7 @@ func resourceServer() *schema.Resource {
 
 func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	projectID := d.Get("project_id").(string)
 	hostname := d.Get("hostname").(string)
@@ -127,9 +127,9 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 		UserData:    userData,
 	}
 
-	server, _, err := c.Server.Create(projectID, &addServerRequest)
+	server, _, err := c.client.Server.Create(projectID, &addServerRequest)
 	if err != nil {
-		log.Fatal("Error while creating new server: ", err)
+		log.Printf("Error while creating new server: %#v", err)
 	}
 
 	serverID := strconv.Itoa(server.ID)
@@ -138,7 +138,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	err = waitForServer(d, m)
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Printf("Error: %v", err)
 	}
 
 	return resourceServerRead(d, m)
@@ -146,11 +146,11 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
-	server, _, err := c.Server.List(d.Id())
+	server, _, err := c.client.Server.List(d.Id())
 	if err != nil {
-		log.Fatalf("Error while listing server: %v", err)
+		log.Printf("Error while listing server: %v", err)
 	}
 
 	// If the server doesn't have any IPs or it's in terminating
@@ -173,9 +173,9 @@ func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	srvPower, _, err := c.Server.PowerState(d.Id())
+	srvPower, _, err := c.client.Server.PowerState(d.Id())
 	if err != nil {
-		log.Fatalf("Error while getting power sstate: %v", err)
+		log.Printf("Error while getting power sstate: %v", err)
 	}
 
 	d.Set("name", server.Name)
@@ -197,11 +197,11 @@ func resourceServerUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	serverDeleteRequest := cherrygo.DeleteServer{ID: d.Id()}
 
-	c.Server.Delete(&serverDeleteRequest)
+	c.client.Server.Delete(&serverDeleteRequest)
 
 	d.SetId("")
 	return nil
@@ -209,13 +209,13 @@ func resourceServerDelete(d *schema.ResourceData, m interface{}) error {
 
 func waitForServer(d *schema.ResourceData, m interface{}) error {
 
-	c := m.(*cherrygo.Client)
+	c, _ := m.(*Config).Client()
 
 	for i := 1; i < 300; i++ {
 
 		time.Sleep(time.Second * 10)
 
-		server, _, err := c.Server.List(d.Id())
+		server, _, err := c.client.Server.List(d.Id())
 		if err != nil {
 			err = fmt.Errorf("timed out waiting for active device: %v", d.Id())
 		}

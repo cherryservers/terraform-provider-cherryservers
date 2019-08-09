@@ -5,6 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/mm0/terraform-provider-cherryservers/cherryservers"
+	//"./cherryservers"
 )
 
 func main() {
