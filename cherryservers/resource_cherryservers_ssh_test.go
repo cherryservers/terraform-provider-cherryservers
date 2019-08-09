@@ -88,10 +88,13 @@ func testAccCheckCherryServersSSHKeyExists(n string, key *cherrygo.SSHKey) resou
 
 		// Try to find the key
 		list, _, err := client.client.SSHKeys.List()
-		i := sort.Search(len(list), func(k int) bool { return list[k].ID == id })
-		if i < len(list) && list[i].ID == id {
-			return nil
+
+		for _, key := range list {
+			if key.ID == id {
+				return nil
+			}
 		}
+
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-module github.com/mm0/terraform-provider-cherryservers
+module github.com/cherryservers/terraform-provider-cherryservers
 
 require (
 	github.com/cherryservers/cherrygo v0.0.0-20190801131840-d8c1476b968d

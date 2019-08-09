@@ -10,7 +10,7 @@ import (
 
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
-var teamID = "35587"
+var teamID = "28519"
 
 func init() {
 	testAccProvider = Provider().(*schema.Provider)

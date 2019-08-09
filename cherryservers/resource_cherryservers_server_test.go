@@ -128,11 +128,11 @@ func testAccCheckCherryServersServerAttributes(server *cherrygo.Servers) resourc
 			return fmt.Errorf("Bad image_slug: %s", server.Image)
 		}
 
-		if server.Plans.ID != 86 { // ID?
+		if server.Plans.ID != 94 {
 			return fmt.Errorf("Bad size_slug: %#v", server.Plans.ID)
 		}
 
-		if server.Pricing.Price != 0.2 {
+		if server.Pricing.Price != 0.121 {
 			return fmt.Errorf("Bad price_hourly: %v", server.Pricing.Price)
 		}
 
@@ -153,7 +153,7 @@ resource "cherryservers_project" "myproject" {
 
 resource "cherryservers_server" "foobar" {
   hostname      = "foo-%d"
-  plan_id = "86"
+  plan_id = "94"
   project_id = "${cherryservers_project.myproject.id}"
   image     = "Ubuntu 18.04 64bit"
   region    = "EU-East-1"
