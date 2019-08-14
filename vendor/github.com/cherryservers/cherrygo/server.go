@@ -18,22 +18,24 @@ type GetServer interface {
 	Delete(request *DeleteServer) (Server, *Response, error)
 	PowerState(serverID string) (PowerState, *Response, error)
 	Reboot(serverID string) (Server, *Response, error)
+	Update(serverID string, request *UpdateServer) (Server, *Response, error)
 }
 
 // Server tai ka grazina api
 type Server struct {
-	ID               int              `json:"id,omitempty"`
-	Name             string           `json:"name,omitempty"`
-	Href             string           `json:"href,omitempty"`
-	Hostname         string           `json:"hostname,omitempty"`
-	Image            string           `json:"image,omitempty"`
-	Region           Region           `json:"region,omitempty"`
-	State            string           `json:"state,omitempty"`
-	Plans            Plans            `json:"plan,omitempty"`
-	AvailableRegions AvailableRegions `json:"availableregions,omitempty"`
-	Pricing          Pricing          `json:"pricing,omitempty"`
-	IPAddresses      []IPAddresses    `json:"ip_addresses,omitempty"`
-	SSHKeys          []SSHKeys        `json:"ssh_keys,omitempty"`
+	ID               int               `json:"id,omitempty"`
+	Name             string            `json:"name,omitempty"`
+	Href             string            `json:"href,omitempty"`
+	Hostname         string            `json:"hostname,omitempty"`
+	Image            string            `json:"image,omitempty"`
+	Region           Region            `json:"region,omitempty"`
+	State            string            `json:"state,omitempty"`
+	Plans            Plans             `json:"plan,omitempty"`
+	AvailableRegions AvailableRegions  `json:"availableregions,omitempty"`
+	Pricing          Pricing           `json:"pricing,omitempty"`
+	IPAddresses      []IPAddresses     `json:"ip_addresses,omitempty"`
+	SSHKeys          []SSHKeys         `json:"ssh_keys,omitempty"`
+	Tags             map[string]string `json:"tags,omitempty"`
 }
 
 // ServerClient paveldi client
@@ -53,14 +55,20 @@ type PowerState struct {
 
 // CreateServer fields for ordering new server
 type CreateServer struct {
-	ProjectID   string   `json:"project_id,omitempty"`
-	PlanID      string   `json:"plan_id,omitempty"`
-	Hostname    string   `json:"hostname,omitempty"`
-	Image       string   `json:"image,omitempty"`
-	Region      string   `json:"region,omitempty"`
-	SSHKeys     []string `json:"ssh_keys"`
-	IPAddresses []string `json:"ip_addresses"`
-	UserData    string   `json:"user_data"`
+	ProjectID   string            `json:"project_id,omitempty"`
+	PlanID      string            `json:"plan_id,omitempty"`
+	Hostname    string            `json:"hostname,omitempty"`
+	Image       string            `json:"image,omitempty"`
+	Region      string            `json:"region,omitempty"`
+	SSHKeys     []string          `json:"ssh_keys"`
+	IPAddresses []string          `json:"ip_addresses"`
+	UserData    string            `json:"user_data,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+}
+
+// UpdateServer fields for updating a server with specified tags
+type UpdateServer struct {
+	Tags map[string]string `json:"tags,omitempty"`
 }
 
 // DeleteServer field for removing server
@@ -179,5 +187,19 @@ func (s *ServerClient) Reboot(serverID string) (Server, *Response, error) {
 
 	resp, err := s.client.MakeRequest("POST", serverPath, rebootRequest, &trans)
 
+	return trans, resp, err
+}
+
+// Update update server with tags
+func (s *ServerClient) Update(serverID string, request *UpdateServer) (Server, *Response, error) {
+
+	var trans Server
+
+	serverPath := strings.Join([]string{baseServerPath, serverID}, "/")
+
+	resp, err := s.client.MakeRequest("PUT", serverPath, request, &trans)
+	if err != nil {
+		err = fmt.Errorf("Error: %v", err)
+	}
 	return trans, resp, err
 }

@@ -79,6 +79,10 @@ func resourceServer() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -95,6 +99,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 	sshKeys1 := d.Get("ssh_keys_ids").([]interface{})
 	ipAddresses := d.Get("ip_addresses_ids").([]interface{})
 	userData := d.Get("user_data").(string)
+	createTags := d.Get("tags").(map[string]interface{})
 
 	//var sshKeysArr []string
 	var sshKeysArr = make([]string, 0)
@@ -116,6 +121,12 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 		ipAddressesArr = append(ipAddressesArr, v.(string))
 	}
 
+	ctags := make(map[string]string)
+
+	for key, value := range createTags {
+		ctags[key] = value.(string)
+	}
+
 	addServerRequest := cherrygo.CreateServer{
 		ProjectID:   projectID,
 		Hostname:    hostname,
@@ -125,6 +136,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 		IPAddresses: ipAddressesArr,
 		PlanID:      planID,
 		UserData:    userData,
+		Tags:        ctags,
 	}
 
 	server, _, err := c.client.Server.Create(projectID, &addServerRequest)
@@ -187,11 +199,31 @@ func resourceServerRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("state", server.State)
 	d.Set("primary_ip", primaryIP)
 	d.Set("private_ip", privateIP)
+	d.Set("tags", server.Tags)
 
 	return nil
 }
 
 func resourceServerUpdate(d *schema.ResourceData, m interface{}) error {
+
+	c, _ := m.(*Config).Client()
+
+	serverUpateRequest := cherrygo.UpdateServer{}
+
+	if d.HasChange("tags") {
+
+		updateTags := d.Get("tags").(map[string]interface{})
+		utags := make(map[string]string)
+
+		for key, value := range updateTags {
+			utags[key] = value.(string)
+		}
+
+		serverUpateRequest.Tags = utags
+	}
+
+	c.client.Server.Update(d.Id(), &serverUpateRequest)
+
 	return resourceServerRead(d, m)
 }
 

@@ -142,6 +142,10 @@ resource "cherryservers_server" "my-dream-server-1" {
     plan_id = "86"
     user_data = "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlczoKICAtIGlmdG9wCiAgLSBubW9uCg=="
     ssh_keys_ids = ["95"]
+    tags          = {
+        Name        = "Application Server 2"
+        Environment = "development"
+    }
 }
 ```
 
@@ -155,6 +159,7 @@ resource "cherryservers_server" "my-dream-server-1" {
 * **ssh_keys_ids** - ID of your SSH key to be assigned to a new server
 * **ip_addresses_ids** - UIDs of your floating IP addresses to be assigned to a new server
 * **user_data** - base64 encoded User-Data blob. It should be either bash or cloud-config script.
+* **tags** - key/value metadata for server tagging.
 
 During server creation process, some additional variables will be acquired via API:
 
