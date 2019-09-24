@@ -132,7 +132,7 @@ func testAccCheckCherryServersServerAttributes(server *cherrygo.Servers) resourc
 			return fmt.Errorf("Bad size_slug: %#v", server.Plans.ID)
 		}
 
-		if server.Pricing.Price != 0.121 {
+		if server.Pricing.Price != 0.1 {
 			return fmt.Errorf("Bad price_hourly: %v", server.Pricing.Price)
 		}
 
