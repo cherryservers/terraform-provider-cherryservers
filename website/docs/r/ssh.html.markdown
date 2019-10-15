@@ -35,6 +35,8 @@ The following arguments are supported:
 * `name` - (Required) The Server name.
 * `public_key` - (Required) The public key contents as a string to be added to your account
 
+## Attributes Reference
+
 The following attributes are exported:
 
 * `id` - The ID of the SSH Key. Use this attribute when associating an SSH Key to a cherryservers\_server resource

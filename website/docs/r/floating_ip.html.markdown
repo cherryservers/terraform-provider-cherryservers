@@ -45,7 +45,8 @@ The following attributes are exported:
 * `address` - The address of the IP eg. 127.0.0.1
 * `cidr`- The CIDR block of the IP
 * `gateway` - The Gateway address for the IP
-* `ptr` - The PTR record that resolves to the IP address
+* `a_record` - Public A record which points to the assigned IP address
+* `ptr_record` - The PTR record that resolves to the IP address
 * `type` - The type of IP 
 * `routed_to` - The hostname or IP that the IP routes to
 * `region` - The region of the IP 

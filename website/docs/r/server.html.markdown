@@ -78,6 +78,8 @@ The following arguments are supported:
 * `plan_id` - (Required) The unique slug that indentifies the type of Server. You can find a list of available slugs on [CherryServers API](https://api.cherryservers.com/doc/#tag/Plans/paths/~1v1~1teams~1{teamId}~1plans/get).
 * `ssh_key_ids` - (Optional) A list of SSH IDs to enable in the format `[12345, 123456]`. 
 * `ip_addresses_ids` - (Optional) A list of IP Address IDs to enable in the format `[12345, 123456]`. 
+* `user_data` - (Optional) Base64 encoded User-Data blob. It should be either bash or cloud-config script.
+* `tags` - (Optional) Key/value metadata for server tagging.
 
 ## Attributes Reference
 

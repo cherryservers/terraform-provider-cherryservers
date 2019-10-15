@@ -31,3 +31,7 @@ resource "cherryservers_server" "web" {
 ## Argument Reference
 
 - None
+
+## Attributes Reference
+
+* `auth_token` - (Optional) This is CherryServers access token. It must be provided, but it can also be specified from the `CHERRY_AUTH_TOKEN` environment variable.
