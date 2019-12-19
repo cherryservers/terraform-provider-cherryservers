@@ -142,6 +142,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 	server, _, err := c.client.Server.Create(projectID, &addServerRequest)
 	if err != nil {
 		log.Printf("Error while creating new server: %#v", err)
+		return err
 	}
 
 	serverID := strconv.Itoa(server.ID)
@@ -151,6 +152,7 @@ func resourceServerCreate(d *schema.ResourceData, m interface{}) error {
 	err = waitForServer(d, m)
 	if err != nil {
 		log.Printf("Error: %v", err)
+		return err
 	}
 
 	return resourceServerRead(d, m)
