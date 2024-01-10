@@ -9,10 +9,10 @@
 package appengine // import "google.golang.org/appengine"
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	"google.golang.org/appengine/internal"
 )
@@ -35,24 +35,27 @@ import (
 //
 // Main is designed so that the app's main package looks like this:
 //
-//      package main
+//	package main
 //
-//      import (
-//              "google.golang.org/appengine"
+//	import (
+//	        "google.golang.org/appengine"
 //
-//              _ "myapp/package0"
-//              _ "myapp/package1"
-//      )
+//	        _ "myapp/package0"
+//	        _ "myapp/package1"
+//	)
 //
-//      func main() {
-//              appengine.Main()
-//      }
+//	func main() {
+//	        appengine.Main()
+//	}
 //
 // The "myapp/packageX" packages are expected to register HTTP handlers
 // in their init functions.
 func Main() {
 	internal.Main()
 }
+
+// Middleware wraps an http handler so that it can make GAE API calls
+var Middleware func(http.Handler) http.Handler = internal.Middleware
 
 // IsDevAppServer reports whether the App Engine app is running in the
 // development App Server.
@@ -96,8 +99,6 @@ func NewContext(req *http.Request) context.Context {
 func WithContext(parent context.Context, req *http.Request) context.Context {
 	return internal.WithContext(parent, req)
 }
-
-// TODO(dsymonds): Add a Call function here? Otherwise other packages can't access internal.Call.
 
 // BlobKey is a key for a blobstore blob.
 //

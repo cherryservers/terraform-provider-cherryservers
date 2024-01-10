@@ -1,9 +1,0 @@
-.DS_Store
-*.tf
-terraform.tfplan
-terraform.tfstate*
-examples/
-.terraform/
-plays/
-*.log
-terraform-provider-cherryservers
