@@ -1,6 +1,6 @@
 module github.com/cherryservers/terraform-provider-cherryservers
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cherryservers/cherrygo/v3 v3.1.0
