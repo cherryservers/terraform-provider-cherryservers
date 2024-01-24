@@ -36,6 +36,6 @@ jobs:
         with:
           args: release --clean
         env:
-          # GitHub sets the GITHUB_TOKEN secret automatically.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GitHub sets the ACCESS_TOKEN secret automatically.
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
