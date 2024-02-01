@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/cherryservers/cherrygo/v3 v3.1.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.31.0
 )
