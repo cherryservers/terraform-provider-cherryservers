@@ -4,7 +4,7 @@ data "cherryservers_ssh_key" "by_id" {
 }
 
 # Get SSH key info by name
-data "cherryservers_ssh_key" "by_id" {
+data "cherryservers_ssh_key" "by_name" {
   project_id = "123"
   name       = "ssh-key-name"
 }
