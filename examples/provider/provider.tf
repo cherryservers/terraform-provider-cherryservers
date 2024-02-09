@@ -6,6 +6,11 @@ terraform {
   }
 }
 
+# Set the variable value in *.tfvars file
+# or using -var="cherry_api_token=..." CLI option
+variable "cherry_api_token" {}
+
+# Configure the Cherry Servers Provider
 provider "cherryservers" {
-  api_token = "CHEERRY_SERVERS_API_KEY" // API key can be found in Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
+  api_token = var.cherry_api_token // API key can be found in Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
 }
