@@ -28,21 +28,13 @@ $ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-cherryservers
 $ go build -o terraform-provider-cherryservers
 ```
 
+Generate documentation
+
+```sh
+tfplugindocs generate
+```
+
 Using the provider
 ----------------------
 
-See the [Cherry Servers Provider documentation](https://registry.terraform.io/providers/cherryservers/cherryservers/latest/docs) to get started using the Cherry Servers provider.
-
-The Terraform provider should be configured with proper credentials:
-
-```
-export CHERRY_AUTH_TOKEN="4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6dae9b7e03b0"
-```
-
-or 
-
-```
-provider "cherryservers" {
-  api_token = "4bdc0acb8f7af4bdc0acb8f7afe78522e6dae9b7e03b0e78522e6dae9b7e03b0"
-}
-```
+See the documentation in [./docs/](/docs/) or [Cherry Servers Provider documentation](https://registry.terraform.io/providers/cherryservers/cherryservers/latest/docs) to get started using the Cherry Servers provider.
