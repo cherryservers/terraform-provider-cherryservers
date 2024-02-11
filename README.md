@@ -28,6 +28,12 @@ $ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-cherryservers
 $ go build -o terraform-provider-cherryservers
 ```
 
+Generate documentation
+
+```sh
+tfplugindocs generate
+```
+
 Using the provider
 ----------------------
 
