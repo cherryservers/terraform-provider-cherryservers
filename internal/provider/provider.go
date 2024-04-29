@@ -97,7 +97,7 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 	// Example client configuration for data sources and resources
 	config := Config{}
 	config.AuthKey = apiKey
-	client, err := config.Client(p.version)
+	client, err := config.Client(req.TerraformVersion)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create CherryServers API Client",
