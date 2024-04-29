@@ -40,8 +40,8 @@ func terraformFrameworkVersion() string {
 }
 
 // Client initialize cherrygo client
-func (c *Config) Client(version string) (*Client, error) {
-	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", version, terraformFrameworkVersion())
+func (c *Config) Client(terraformVersion string) (*Client, error) {
+	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", terraformVersion, terraformFrameworkVersion())
 	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(c.AuthKey), cherrygo.WithUserAgent(userAgent)}
 	cherryClient, _ := cherrygo.NewClient(args...)
 
