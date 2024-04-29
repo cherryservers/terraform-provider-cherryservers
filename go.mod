@@ -1,8 +1,9 @@
-module github.com/hashicorp/terraform-provider-scaffolding-framework
+module terraform-provider-cherryservers
 
 go 1.21
 
 require (
+	github.com/cherryservers/cherrygo/v3 v3.2.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.19.1
 	github.com/hashicorp/terraform-plugin-framework v1.8.0
