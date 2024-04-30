@@ -119,7 +119,7 @@ func (p *CherryServersProvider) Resources(ctx context.Context) []func() resource
 
 func (p *CherryServersProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewExampleDataSource,
+		NewProjectDataSource,
 	}
 }
 
