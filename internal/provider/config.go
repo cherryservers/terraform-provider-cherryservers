@@ -13,15 +13,6 @@ type Config struct {
 	AuthKey string
 }
 
-// Client wrap cherrygo client
-type Client struct {
-	client *cherrygo.Client
-}
-
-func (c *Client) cherrygoClient() *cherrygo.Client {
-	return c.client
-}
-
 // terraformFrameworkVersion looks up the module version of the Terraform Framework for use
 // in the User Agent client string
 func terraformFrameworkVersion() string {
@@ -40,10 +31,10 @@ func terraformFrameworkVersion() string {
 }
 
 // Client initialize cherrygo client
-func (c *Config) Client(terraformVersion string) (*Client, error) {
+func (c *Config) Client(terraformVersion string) (*cherrygo.Client, error) {
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", terraformVersion, terraformFrameworkVersion())
 	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(c.AuthKey), cherrygo.WithUserAgent(userAgent)}
 	cherryClient, _ := cherrygo.NewClient(args...)
 
-	return &Client{client: cherryClient}, nil
+	return cherryClient, nil
 }
