@@ -5,7 +5,10 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -51,6 +54,8 @@ func (p *CherryServersProvider) Schema(ctx context.Context, req provider.SchemaR
 }
 
 func (p *CherryServersProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring CherryServers client")
+
 	var data CherryServersProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
@@ -94,10 +99,15 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "cherryservers_api_key", apiKey)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "cherryservers_api_key")
+
+	tflog.Debug(ctx, "Creating CherryServers client")
+
 	// Example client configuration for data sources and resources
-	config := Config{}
-	config.AuthKey = apiKey
-	client, err := config.Client(req.TerraformVersion)
+	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", p.version, req.TerraformVersion)
+	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
+	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create CherryServers API Client",
@@ -109,6 +119,8 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 	}
 	resp.DataSourceData = client
 	resp.ResourceData = client
+
+	tflog.Info(ctx, "Successfully created CherryServers client")
 }
 
 func (p *CherryServersProvider) Resources(ctx context.Context) []func() resource.Resource {
