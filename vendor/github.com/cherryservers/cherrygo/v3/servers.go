@@ -21,6 +21,7 @@ type ServersService interface {
 	Update(serverID int, request *UpdateServer) (Server, *Response, error)
 	Reinstall(serverID int, fields *ReinstallServerFields) (Server, *Response, error)
 	ListSSHKeys(serverID int, opts *GetOptions) ([]SSHKey, *Response, error)
+	ResetBMCPassword(serverID int) (Server, *Response, error)
 }
 
 // Server response object
@@ -28,7 +29,10 @@ type Server struct {
 	ID               int               `json:"id,omitempty"`
 	Name             string            `json:"name,omitempty"`
 	Href             string            `json:"href,omitempty"`
+	BMC              BMC               `json:"bmc,omitempty"`
 	Hostname         string            `json:"hostname,omitempty"`
+	Username         string            `json:"username,omitempty"`
+	Password         string            `json:"password"`
 	Image            string            `json:"image,omitempty"`
 	SpotInstance     bool              `json:"spot_instance"`
 	BGP              ServerBGP         `json:"bgp,omitempty"`
@@ -47,6 +51,11 @@ type Server struct {
 	TerminationDate  string            `json:"termination_date,omitempty"`
 }
 
+type BMC struct {
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
 type ReinstallServer struct {
 	ServerAction
 	*ReinstallServerFields
@@ -57,6 +66,7 @@ type ReinstallServerFields struct {
 	Hostname        string   `json:"hostname,omitempty"`
 	Password        string   `json:"password"`
 	SSHKeys         []string `json:"ssh_key,omitempty"`
+	UserData        string   `json:"user_data,omitempty"`
 	OSPartitionSize int      `json:"os_partition_size,omitempty"`
 }
 
@@ -154,6 +164,14 @@ func (s *ServersClient) PowerOn(serverID int) (Server, *Response, error) {
 func (s *ServersClient) Reboot(serverID int) (Server, *Response, error) {
 	action := ServerAction{
 		Type: "reboot",
+	}
+
+	return s.action(serverID, action)
+}
+
+func (s *ServersClient) ResetBMCPassword(serverID int) (Server, *Response, error) {
+	action := ServerAction{
+		Type: "reset-bmc-password",
 	}
 
 	return s.action(serverID, action)
