@@ -12,8 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"math"
-	"strconv"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -113,12 +111,6 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	projectID := state.Id.ValueInt64()
-	if strconv.IntSize == 32 && (projectID < math.MinInt32 || projectID > math.MaxInt32) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Project ID invalid",
-			"The provider cannot create the project data source as the ID does not fit a 32 bit integer. ")
-	}
 
 	if projectID == 0 {
 		resp.Diagnostics.AddAttributeError(
@@ -134,7 +126,7 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	project, _, err := d.client.Projects.Get(int(projectID), nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to get CherryServers Project",
+			"Error: unable to read a CherryServers project data source",
 			err.Error(),
 		)
 		return
