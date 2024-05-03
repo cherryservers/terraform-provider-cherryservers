@@ -79,7 +79,7 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	apiKey := os.Getenv("CHERRY_AUTH_TOKEN")
+	apiKey := os.Getenv("CHERRY_AUTH_KEY")
 
 	if !data.APIKey.IsNull() {
 		apiKey = data.APIKey.ValueString()
