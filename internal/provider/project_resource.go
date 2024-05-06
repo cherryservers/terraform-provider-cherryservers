@@ -94,6 +94,9 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 					"local_asn": schema.Int64Attribute{
 						Computed:    true,
 						Description: "The local ASN of the project",
+						PlanModifiers: []planmodifier.Int64{
+							int64planmodifier.UseStateForUnknown(),
+						},
 					},
 				},
 				Computed: true,
