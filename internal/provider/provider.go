@@ -126,6 +126,7 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 func (p *CherryServersProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewProjectResource,
+		NewIpResource,
 	}
 }
 
