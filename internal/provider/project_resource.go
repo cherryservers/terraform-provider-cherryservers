@@ -132,7 +132,7 @@ func (r *projectResource) Configure(ctx context.Context, req resource.ConfigureR
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *cherrgo.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *cherrygo.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
@@ -160,7 +160,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	project, _, err := r.client.Projects.Create(int(teamId), request)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error: unable to create a CherryServers project resource",
+			"unable to create a CherryServers project resource",
 			err.Error(),
 		)
 		return
@@ -198,10 +198,14 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	projectId, _ := strconv.Atoi(data.Id.ValueString())
-	project, _, err := r.client.Projects.Get(projectId, nil)
+	project, projectGetResp, err := r.client.Projects.Get(projectId, nil)
 	if err != nil {
+		if is404Error(projectGetResp) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
-			"Error: unable to read a CherryServers project resource",
+			"unable to read a CherryServers project resource",
 			err.Error(),
 		)
 		return
@@ -242,7 +246,7 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 	project, _, err := r.client.Projects.Update(projectID, request)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error: unable to update a CherryServers project resource",
+			"unable to update a CherryServers project resource",
 			err.Error(),
 		)
 		return
@@ -278,7 +282,7 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	projectId, _ := strconv.Atoi(data.Id.ValueString())
 	if _, err := r.client.Projects.Delete(projectId); err != nil {
 		resp.Diagnostics.AddError(
-			"Error: unable to delete a CherryServers project resource",
+			"unable to delete a CherryServers project resource",
 			err.Error(),
 		)
 		return
