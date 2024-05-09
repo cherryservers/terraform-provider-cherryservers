@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
 	"strings"
@@ -19,14 +20,19 @@ func ServerHostnameToID(hostname string, projectID int, ServerService cherrygo.S
 		}
 	}
 
-	return 0, fmt.Errorf("Could not find server with `%s` hostname", hostname)
+	return 0, fmt.Errorf("could not find server with `%s` hostname", hostname)
 }
 
 func serverList(projectID int, ServerService cherrygo.ServersService) ([]cherrygo.Server, error) {
 	getOptions := cherrygo.GetOptions{
 		Fields: []string{"id", "name", "hostname"},
 	}
-	serverList, _, err := ServerService.List(projectID, &getOptions)
+	srvList, _, err := ServerService.List(projectID, &getOptions)
 
-	return serverList, err
+	return srvList, err
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }

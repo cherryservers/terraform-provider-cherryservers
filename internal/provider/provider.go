@@ -127,6 +127,7 @@ func (p *CherryServersProvider) Resources(ctx context.Context) []func() resource
 	return []func() resource.Resource{
 		NewProjectResource,
 		NewIpResource,
+		NewServerResource,
 	}
 }
 
