@@ -18,9 +18,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -46,22 +46,22 @@ type serverResource struct {
 
 // serverResourceModel describes the resource data model.
 type serverResourceModel struct {
-	Plan            types.String   `tfsdk:"plan"`
-	ProjectId       types.Int64    `tfsdk:"project_id"`
-	Region          types.String   `tfsdk:"region"`
-	Hostname        types.String   `tfsdk:"hostname"`
-	Image           types.String   `tfsdk:"image"`
-	SSHKeyIds       types.List     `tfsdk:"ssh_key_ids"`
-	IPAddressesIds  types.List     `tfsdk:"ip_addresses_ids"`
-	UserData        types.String   `tfsdk:"user_data"`
-	Tags            types.Map      `tfsdk:"tags"`
-	SpotInstance    types.Bool     `tfsdk:"spot_instance"`
-	OSPartitionSize types.Int64    `tfsdk:"os_partition_size"`
-	PowerState      types.String   `tfsdk:"power_state"`
-	State           types.String   `tfsdk:"state"`
-	IpAddresses     types.List     `tfsdk:"ip_addresses"`
-	Id              types.String   `tfsdk:"id"`
-	Timeouts        timeouts.Value `tfsdk:"timeouts"`
+	Plan                types.String   `tfsdk:"plan"`
+	ProjectId           types.Int64    `tfsdk:"project_id"`
+	Region              types.String   `tfsdk:"region"`
+	Hostname            types.String   `tfsdk:"hostname"`
+	Image               types.String   `tfsdk:"image"`
+	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
+	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
+	UserData            types.String   `tfsdk:"user_data"`
+	Tags                types.Map      `tfsdk:"tags"`
+	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
+	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
+	PowerState          types.String   `tfsdk:"power_state"`
+	State               types.String   `tfsdk:"state"`
+	IpAddresses         types.Set      `tfsdk:"ip_addresses"`
+	Id                  types.String   `tfsdk:"id"`
+	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (d *serverResourceModel) populateState(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -76,14 +76,17 @@ func (d *serverResourceModel) populateState(server cherrygo.Server, ctx context.
 		sshKeyID := strconv.Itoa(sshKey.ID)
 		sshKeyIds = append(sshKeyIds, sshKeyID)
 	}
-	sshKeyIdsTf, sshDiags := types.ListValueFrom(ctx, types.StringType, sshKeyIds)
+	sshKeyIdsTf, sshDiags := types.SetValueFrom(ctx, types.StringType, sshKeyIds)
 	d.SSHKeyIds = sshKeyIdsTf
 	diags.Append(sshDiags...)
 
 	var ips []attr.Value
 	for _, ip := range server.IPAddresses {
-		ipId := ip.ID
-		ipIds = append(ipIds, ipId)
+
+		// ExtraIPAddresses shouldn't have unmodifiable (primary and private type) IPs
+		if ip.Type == "subnet" || ip.Type == "floating-ip" {
+			ipIds = append(ipIds, ip.ID)
+		}
 
 		ipModel := ipAddressFlatResourceModel{
 			Id:            types.StringValue(ip.ID),
@@ -99,12 +102,12 @@ func (d *serverResourceModel) populateState(server cherrygo.Server, ctx context.
 		ips = append(ips, ipTf)
 	}
 
-	ipsTf, ipsDiags := types.ListValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ips)
+	ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ips)
 	diags.Append(ipsDiags...)
 	d.IpAddresses = ipsTf
 
-	ipIdsTf, ipIdDiags := types.ListValueFrom(ctx, types.StringType, ipIds)
-	d.IPAddressesIds = ipIdsTf
+	ipIdsTf, ipIdDiags := types.SetValueFrom(ctx, types.StringType, ipIds)
+	d.ExtraIPAddressesIds = ipIdsTf
 	diags.Append(ipIdDiags...)
 
 	tags, tagsDiags := types.MapValueFrom(ctx, types.StringType, server.Tags)
@@ -176,19 +179,19 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 			},
-			"ssh_key_ids": schema.ListAttribute{
+			"ssh_key_ids": schema.SetAttribute{
 				Description: "List of the SSH key IDs allowed to SSH to the server",
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
-			"ip_addresses_ids": schema.ListAttribute{
+			"extra_ip_addresses_ids": schema.SetAttribute{
 				Description: "List of the IP address IDs to be embedded into the Server",
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
 			"user_data": schema.StringAttribute{
 				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script",
@@ -222,7 +225,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Description: "The state of the server, such as 'pending' or 'active'",
 				Computed:    true,
 			},
-			"ip_addresses": schema.ListNestedAttribute{
+			"ip_addresses": schema.SetNestedAttribute{
 				Description: "IP addresses attached to the server",
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
@@ -310,8 +313,8 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	request.SSHKeys = sshIds
 
-	ipsIds := make([]string, len(data.IPAddressesIds.Elements()))
-	diags = data.IPAddressesIds.ElementsAs(ctx, &ipsIds, false)
+	ipsIds := make([]string, len(data.ExtraIPAddressesIds.Elements()))
+	diags = data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
 	resp.Diagnostics.Append(diags...)
 
 	request.IPAddresses = ipsIds
@@ -386,6 +389,12 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	powerState, _, err := r.client.Servers.PowerState(server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
+		return
+	}
+
+	server, _, err = r.client.Servers.Get(server.ID, nil)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to read a CherryServers server resource, after it's creation", err.Error())
 		return
 	}
 
