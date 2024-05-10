@@ -46,22 +46,22 @@ type serverResource struct {
 
 // serverResourceModel describes the resource data model.
 type serverResourceModel struct {
-	Plan            types.String                 `tfsdk:"plan"`
-	ProjectId       types.Int64                  `tfsdk:"project_id"`
-	Region          types.String                 `tfsdk:"region"`
-	Hostname        types.String                 `tfsdk:"hostname"`
-	Image           types.String                 `tfsdk:"image"`
-	SSHKeyIds       types.List                   `tfsdk:"ssh_key_ids"`
-	IPAddressesIds  types.List                   `tfsdk:"ip_addresses_ids"`
-	UserData        types.String                 `tfsdk:"user_data"`
-	Tags            types.Map                    `tfsdk:"tags"`
-	SpotInstance    types.Bool                   `tfsdk:"spot_instance"`
-	OSPartitionSize types.Int64                  `tfsdk:"os_partition_size"`
-	PowerState      types.String                 `tfsdk:"power_state"`
-	State           types.String                 `tfsdk:"state"`
-	IpAddresses     []ipAddressFlatResourceModel `tfsdk:"ip_addresses"`
-	Id              types.String                 `tfsdk:"id"`
-	Timeouts        timeouts.Value               `tfsdk:"timeouts"`
+	Plan            types.String   `tfsdk:"plan"`
+	ProjectId       types.Int64    `tfsdk:"project_id"`
+	Region          types.String   `tfsdk:"region"`
+	Hostname        types.String   `tfsdk:"hostname"`
+	Image           types.String   `tfsdk:"image"`
+	SSHKeyIds       types.List     `tfsdk:"ssh_key_ids"`
+	IPAddressesIds  types.List     `tfsdk:"ip_addresses_ids"`
+	UserData        types.String   `tfsdk:"user_data"`
+	Tags            types.Map      `tfsdk:"tags"`
+	SpotInstance    types.Bool     `tfsdk:"spot_instance"`
+	OSPartitionSize types.Int64    `tfsdk:"os_partition_size"`
+	PowerState      types.String   `tfsdk:"power_state"`
+	State           types.String   `tfsdk:"state"`
+	IpAddresses     types.List     `tfsdk:"ip_addresses"`
+	Id              types.String   `tfsdk:"id"`
+	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (d *serverResourceModel) populateState(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -80,22 +80,32 @@ func (d *serverResourceModel) populateState(server cherrygo.Server, ctx context.
 	d.SSHKeyIds = sshKeyIdsTf
 	diags.Append(sshDiags...)
 
-	//d.IpAddresses = []ipAddressFlatResourceModel{}
+	var ips []attr.Value
 	for _, ip := range server.IPAddresses {
 		ipId := ip.ID
 		ipIds = append(ipIds, ipId)
-		d.IpAddresses = append(d.IpAddresses, ipAddressFlatResourceModel{
+
+		ipModel := ipAddressFlatResourceModel{
 			Id:            types.StringValue(ip.ID),
 			Type:          types.StringValue(ip.Type),
-			Address:       types.StringValue(ip.Type),
+			Address:       types.StringValue(ip.Address),
 			AddressFamily: types.Int64Value(int64(ip.AddressFamily)),
 			CIDR:          types.StringValue(ip.Cidr),
-		})
+		}
+
+		ipTf, ipDiags := types.ObjectValueFrom(ctx, ipModel.AttributeTypes(), ipModel)
+		diags.Append(ipDiags...)
+
+		ips = append(ips, ipTf)
 	}
 
-	ipIdsTf, ipDiags := types.ListValueFrom(ctx, types.StringType, ipIds)
+	ipsTf, ipsDiags := types.ListValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ips)
+	diags.Append(ipsDiags...)
+	d.IpAddresses = ipsTf
+
+	ipIdsTf, ipIdDiags := types.ListValueFrom(ctx, types.StringType, ipIds)
 	d.IPAddressesIds = ipIdsTf
-	diags.Append(ipDiags...)
+	diags.Append(ipIdDiags...)
 
 	tags, tagsDiags := types.MapValueFrom(ctx, types.StringType, server.Tags)
 	d.Tags = tags
@@ -113,6 +123,16 @@ type ipAddressFlatResourceModel struct {
 	Address       types.String `tfsdk:"address"`
 	AddressFamily types.Int64  `tfsdk:"address_family"`
 	CIDR          types.String `tfsdk:"cidr"`
+}
+
+func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":             types.StringType,
+		"type":           types.StringType,
+		"address":        types.StringType,
+		"address_family": types.Int64Type,
+		"cidr":           types.StringType,
+	}
 }
 
 func (r *serverResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
