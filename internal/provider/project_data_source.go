@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -38,6 +39,13 @@ type projectDataSourceModel struct {
 type projectBGPModel struct {
 	Enabled  types.Bool  `tfsdk:"enabled"`
 	LocalASN types.Int64 `tfsdk:"local_asn"`
+}
+
+func (m projectBGPModel) AttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":   types.BoolType,
+		"local_asn": types.Int64Type,
+	}
 }
 
 func (d *projectDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

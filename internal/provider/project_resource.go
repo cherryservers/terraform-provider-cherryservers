@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
 )
@@ -38,19 +40,26 @@ type projectResource struct {
 
 // projectResourceModel describes the resource data model.
 type projectResourceModel struct {
-	Name   types.String     `tfsdk:"name"`
-	TeamId types.Int64      `tfsdk:"team_id"`
-	Href   types.String     `tfsdk:"href"`
-	BGP    *projectBGPModel `tfsdk:"bgp"`
-	Id     types.String     `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
+	TeamId types.Int64  `tfsdk:"team_id"`
+	Href   types.String `tfsdk:"href"`
+	BGP    types.Object `tfsdk:"bgp"`
+	Id     types.String `tfsdk:"id"`
 }
 
-func (d *projectResourceModel) populateState(project cherrygo.Project) {
+func (d *projectResourceModel) populateState(project cherrygo.Project, ctx context.Context, diags diag.Diagnostics) {
 	d.Id = types.StringValue(strconv.Itoa(project.ID))
-	d.BGP = &projectBGPModel{
+
+	bgp := projectBGPModel{
 		Enabled:  types.BoolValue(project.Bgp.Enabled),
 		LocalASN: types.Int64Value(int64(project.Bgp.LocalASN)),
 	}
+
+	bgpTf, bgpDiags := types.ObjectValueFrom(ctx, bgp.AttributeTypes(), bgp)
+
+	d.BGP = bgpTf
+	diags.Append(bgpDiags...)
+
 	d.Href = types.StringValue(project.Href)
 	d.Name = types.StringValue(project.Name)
 
@@ -106,9 +115,11 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 						map[string]attr.Type{
 							"enabled":   types.BoolType,
 							"local_asn": types.Int64Type,
-						}, map[string]attr.Value{
+						},
+						map[string]attr.Value{
 							"enabled":   types.BoolValue(false),
-							"local_asn": types.Int64Null()})),
+							"local_asn": types.Int64Unknown(),
+						})),
 			},
 			"id": schema.StringAttribute{
 				Description: "Project identifier",
@@ -151,10 +162,14 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	var bgp projectBGPModel
+	bgpDiags := data.BGP.As(ctx, &bgp, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(bgpDiags...)
+
 	teamId := data.TeamId.ValueInt64()
 	request := &cherrygo.CreateProject{
 		Name: data.Name.ValueString(),
-		Bgp:  data.BGP.Enabled.ValueBool(),
+		Bgp:  bgp.Enabled.ValueBool(),
 	}
 
 	project, _, err := r.client.Projects.Create(int(teamId), request)
@@ -176,7 +191,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
-	data.populateState(project)
+	data.populateState(project, ctx, resp.Diagnostics)
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log
@@ -219,7 +234,7 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	//     return
 	// }
 
-	data.populateState(project)
+	data.populateState(project, ctx, resp.Diagnostics)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -235,11 +250,15 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	var bgp projectBGPModel
+	bgpDiags := data.BGP.As(ctx, &bgp, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(bgpDiags...)
+
 	name := data.Name.ValueString()
-	bgp := data.BGP.Enabled.ValueBool()
+	bgpEnabled := bgp.Enabled.ValueBool()
 	request := &cherrygo.UpdateProject{
 		Name: &name,
-		Bgp:  &bgp,
+		Bgp:  &bgpEnabled,
 	}
 
 	projectID, _ := strconv.Atoi(data.Id.ValueString())
@@ -252,7 +271,7 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	data.populateState(project)
+	data.populateState(project, ctx, resp.Diagnostics)
 
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
