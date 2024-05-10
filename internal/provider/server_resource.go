@@ -460,12 +460,34 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	//TODO//
 	var data serverResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	serverID, _ := strconv.Atoi(data.Id.ValueString())
+
+	requestUpdate := cherrygo.UpdateServer{
+		Hostname: data.Hostname.ValueString(),
+	}
+
+	tagsMap := make(map[string]string, len(data.Tags.Elements()))
+	diags := data.Tags.ElementsAs(ctx, &tagsMap, false)
+	resp.Diagnostics.Append(diags...)
+
+	requestUpdate.Tags = &tagsMap
+
+	server, _, err := r.client.Servers.Update(serverID, &requestUpdate)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"unable to update a CherryServers server resource",
+			err.Error(),
+		)
 		return
 	}
 
@@ -476,6 +498,13 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update server, got error: %s", err))
 	//     return
 	// }
+	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
+		return
+	}
+
+	data.populateState(server, ctx, resp.Diagnostics, powerState.Power)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -490,6 +519,19 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	serverID, _ := strconv.Atoi(data.Id.ValueString())
+
+	if _, _, err := r.client.Servers.Delete(serverID); err != nil {
+		resp.Diagnostics.AddError(
+			"unable to delete a CherryServers server resource",
+			err.Error(),
+		)
+		return
+	}
+
+	ctx = tflog.SetField(ctx, "server_id", data.Id)
+	tflog.Trace(ctx, "deleted a resource")
 
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
