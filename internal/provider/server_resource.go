@@ -33,6 +33,9 @@ var (
 	_ resource.Resource                = &serverResource{}
 	_ resource.ResourceWithConfigure   = &serverResource{}
 	_ resource.ResourceWithImportState = &serverResource{}
+	_ planmodifier.String              = warnServerReinstallNeededModifier{}
+	_ planmodifier.Int64               = warnServerReinstallNeededModifier{}
+	_ planmodifier.Set                 = warnServerReinstallNeededModifier{}
 )
 
 func NewServerResource() resource.Resource {
@@ -50,6 +53,7 @@ type serverResourceModel struct {
 	ProjectId           types.Int64    `tfsdk:"project_id"`
 	Region              types.String   `tfsdk:"region"`
 	Hostname            types.String   `tfsdk:"hostname"`
+	Name                types.String   `tfsdk:"name"`
 	Image               types.String   `tfsdk:"image"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
@@ -69,6 +73,7 @@ func (d *serverResourceModel) populateState(server cherrygo.Server, ctx context.
 	d.ProjectId = types.Int64Value(int64(server.Project.ID))
 	d.Region = types.StringValue(server.Region.Slug)
 	d.Hostname = types.StringValue(server.Hostname)
+	d.Name = types.StringValue(server.Name)
 	d.Image = types.StringValue(server.Image)
 
 	var sshKeyIds, ipIds []string
@@ -138,6 +143,71 @@ func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
 	}
 }
 
+type warnServerReinstallNeededModifier struct {
+}
+
+func (m warnServerReinstallNeededModifier) Description(_ context.Context) string {
+	return "Diagnostics warning that a server reinstall will be needed"
+}
+
+func (m warnServerReinstallNeededModifier) MarkdownDescription(_ context.Context) string {
+	return "Diagnostics warning that a server reinstall will be needed"
+}
+
+func (m warnServerReinstallNeededModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	// Not applicable on resource creation and destruction
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	if req.StateValue.Equal(req.PlanValue) {
+		return
+	}
+
+	resp.Diagnostics.AddAttributeWarning(req.Path, "Warning: server reinstall required",
+		`When updating "image", "password", "ssh_key_ids", "os_partition_size" or "user_data" values, the server OS has to be reinstalled.`)
+}
+
+func WarnServerReinstallNeededString() planmodifier.String {
+	return warnServerReinstallNeededModifier{}
+}
+
+func (m warnServerReinstallNeededModifier) PlanModifyInt64(_ context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+	// Not applicable on resource creation and destruction
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	if req.StateValue.Equal(req.PlanValue) {
+		return
+	}
+
+	resp.Diagnostics.AddAttributeWarning(req.Path, "Warning: server reinstall required",
+		`When updating "image", "password", "ssh_key_ids", "os_partition_size" or "user_data" values, the server OS has to be reinstalled.`)
+}
+
+func WarnServerReinstallNeededInt64() planmodifier.Int64 {
+	return warnServerReinstallNeededModifier{}
+}
+
+func (m warnServerReinstallNeededModifier) PlanModifySet(_ context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+	// Not applicable on resource creation and destruction
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	if req.StateValue.Equal(req.PlanValue) {
+		return
+	}
+
+	resp.Diagnostics.AddAttributeWarning(req.Path, "Warning: server reinstall required",
+		`When updating "image", "password", "ssh_key_ids", "os_partition_size" or "user_data" values, the server OS has to be reinstalled.`)
+}
+
+func WarnServerReinstallNeededSet() planmodifier.Set {
+	return warnServerReinstallNeededModifier{}
+}
+
 func (r *serverResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_server"
 }
@@ -169,6 +239,11 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"name": schema.StringAttribute{
+				Description: "Name of the server",
+				Optional:    true,
+				Computed:    true,
+			},
 			"hostname": schema.StringAttribute{
 				Description: "Hostname of the server",
 				Optional:    true,
@@ -178,6 +253,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					WarnServerReinstallNeededString(),
+				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
 				Description: "List of the SSH key IDs allowed to SSH to the server",
@@ -185,6 +263,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				ElementType: types.StringType,
 				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
+				PlanModifiers: []planmodifier.Set{
+					WarnServerReinstallNeededSet(),
+				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
 				Description: "List of the IP address IDs to be embedded into the Server",
@@ -196,6 +277,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"user_data": schema.StringAttribute{
 				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					WarnServerReinstallNeededString(),
+				},
 			},
 			"tags": schema.MapAttribute{
 				Description: "Key/value metadata for server tagging",
@@ -216,6 +300,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"os_partition_size": schema.Int64Attribute{
 				Description: "OS partition size in GB",
 				Optional:    true,
+				PlanModifiers: []planmodifier.Int64{
+					WarnServerReinstallNeededInt64(),
+				},
 			},
 			"power_state": schema.StringAttribute{
 				Description: "The power state of the server, such as 'Powered off' or 'Powered on'",
@@ -392,9 +479,15 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	server, _, err = r.client.Servers.Get(server.ID, nil)
+	//Workaround for not being able to set BGP and Name on "Request a server" request in API
+	// TODO: add BGP
+	updateRequest := cherrygo.UpdateServer{
+		Name: data.Name.ValueString(),
+	}
+
+	server, _, err = r.client.Servers.Update(server.ID, &updateRequest)
 	if err != nil {
-		resp.Diagnostics.AddError("unable to read a CherryServers server resource, after it's creation", err.Error())
+		resp.Diagnostics.AddError("unable to update a CherryServers server resource with name/bgp after it's creation", err.Error())
 		return
 	}
 
@@ -461,23 +554,62 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	//TODO//
-	var data serverResourceModel
+	var plan, state serverResourceModel
 
-	// Read Terraform plan data into the model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	// Read Terraform plan and state data into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	serverID, _ := strconv.Atoi(data.Id.ValueString())
+	serverID, _ := strconv.Atoi(plan.Id.ValueString())
 
-	requestUpdate := cherrygo.UpdateServer{
-		Hostname: data.Hostname.ValueString(),
+	requestReinstall := cherrygo.ReinstallServerFields{}
+	reinstallNeeded := false
+	if !plan.Image.Equal(state.Image) {
+		requestReinstall.Image = plan.Image.ValueString()
+		reinstallNeeded = true
 	}
 
-	tagsMap := make(map[string]string, len(data.Tags.Elements()))
-	diags := data.Tags.ElementsAs(ctx, &tagsMap, false)
+	if !plan.SSHKeyIds.Equal(state.SSHKeyIds) {
+		sshIds := make([]string, len(plan.SSHKeyIds.Elements()))
+		diags := plan.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
+		resp.Diagnostics.Append(diags...)
+
+		requestReinstall.SSHKeys = sshIds
+		reinstallNeeded = true
+	}
+
+	if !plan.OSPartitionSize.Equal(state.OSPartitionSize) {
+		requestReinstall.OSPartitionSize = int(plan.OSPartitionSize.ValueInt64())
+		reinstallNeeded = true
+	}
+
+	if !plan.UserData.Equal(state.UserData) {
+		if !IsBase64(plan.UserData.ValueString()) {
+			resp.Diagnostics.AddError("invalid UserData", "error reinstalling server, user_data property must be base64 encoded value")
+			return
+		}
+		reinstallNeeded = true
+	}
+
+	if reinstallNeeded {
+		_, _, err := r.client.Servers.Reinstall(serverID, &requestReinstall)
+		if err != nil {
+			resp.Diagnostics.AddError("unable to reinstall a CherryServers server resource", err.Error())
+		}
+		return
+	}
+
+	requestUpdate := cherrygo.UpdateServer{
+		Hostname: plan.Hostname.ValueString(),
+		Name:     plan.Name.ValueString(),
+	}
+
+	tagsMap := make(map[string]string, len(plan.Tags.Elements()))
+	diags := plan.Tags.ElementsAs(ctx, &tagsMap, false)
 	resp.Diagnostics.Append(diags...)
 
 	requestUpdate.Tags = &tagsMap
@@ -492,7 +624,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// If applicable, this is a great opportunity to initialize any necessary
-	// provider client data and make a call using it.
+	// provider client plan and make a call using it.
 	// httpResp, err := r.client.Do(httpReq)
 	// if err != nil {
 	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update server, got error: %s", err))
@@ -504,10 +636,10 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	data.populateState(server, ctx, resp.Diagnostics, powerState.Power)
+	plan.populateState(server, ctx, resp.Diagnostics, powerState.Power)
 
-	// Save updated data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	// Save updated plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
