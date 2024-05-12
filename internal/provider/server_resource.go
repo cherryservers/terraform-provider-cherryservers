@@ -19,11 +19,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/exp/slices"
 	"strconv"
 	"time"
 )
@@ -160,6 +163,10 @@ func (m warnServerReinstallNeededModifier) PlanModifyString(_ context.Context, r
 		return
 	}
 
+	if req.PlanValue.IsUnknown() {
+		return
+	}
+
 	if req.StateValue.Equal(req.PlanValue) {
 		return
 	}
@@ -178,6 +185,10 @@ func (m warnServerReinstallNeededModifier) PlanModifyInt64(_ context.Context, re
 		return
 	}
 
+	if req.PlanValue.IsUnknown() {
+		return
+	}
+
 	if req.StateValue.Equal(req.PlanValue) {
 		return
 	}
@@ -193,6 +204,10 @@ func WarnServerReinstallNeededInt64() planmodifier.Int64 {
 func (m warnServerReinstallNeededModifier) PlanModifySet(_ context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
 	// Not applicable on resource creation and destruction
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	if req.PlanValue.IsUnknown() {
 		return
 	}
 
@@ -243,11 +258,17 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Description: "Name of the server",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"hostname": schema.StringAttribute{
 				Description: "Hostname of the server",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images)",
@@ -255,6 +276,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					WarnServerReinstallNeededString(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
@@ -265,6 +287,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
 				PlanModifiers: []planmodifier.Set{
 					WarnServerReinstallNeededSet(),
+					setplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
@@ -273,6 +296,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				ElementType: types.StringType,
 				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"user_data": schema.StringAttribute{
 				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script",
@@ -287,6 +313,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				ElementType: types.StringType,
 				Default:     mapdefault.StaticValue(types.MapValueMust(types.StringType, map[string]attr.Value{})),
 				Computed:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"spot_instance": schema.BoolAttribute{
 				Description: "If True, provisions the server as a spot instance",
@@ -295,6 +324,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Default:     booldefault.StaticBool(false),
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
+					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"os_partition_size": schema.Int64Attribute{
@@ -302,6 +332,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					WarnServerReinstallNeededInt64(),
+					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"power_state": schema.StringAttribute{
@@ -314,7 +345,11 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"ip_addresses": schema.SetNestedAttribute{
 				Description: "IP addresses attached to the server",
-				Computed:    true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+					//TODO Use state for unknown if no extra addresses
+				},
+				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
@@ -532,6 +567,11 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	if server.State == "terminating" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	powerState, _, err := r.client.Servers.PowerState(server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
@@ -601,6 +641,29 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 			resp.Diagnostics.AddError("unable to reinstall a CherryServers server resource", err.Error())
 		}
 		return
+	}
+
+	if !plan.ExtraIPAddressesIds.Equal(state.ExtraIPAddressesIds) {
+		for _, ip := range plan.ExtraIPAddressesIds.Elements() {
+			if !slices.Contains(state.ExtraIPAddressesIds.Elements(), ip) {
+				ipRequest := cherrygo.UpdateIPAddress{
+					TargetedTo: plan.Id.ValueString(),
+				}
+				ipTf, err := ip.ToTerraformValue(ctx)
+				if err != nil {
+					resp.Diagnostics.AddError("invalid IP value in plan", err.Error())
+					return
+				}
+				if ipTf.IsKnown() {
+					var ipStr string
+					_ = ipTf.As(&ipStr)
+					_, _, err = r.client.IPAddresses.Update(ipStr, &ipRequest)
+					if err != nil {
+						resp.Diagnostics.AddError("unable to update IP address in CherryServers server update operation", err.Error())
+					}
+				}
+			}
+		}
 	}
 
 	requestUpdate := cherrygo.UpdateServer{
