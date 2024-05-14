@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccProjectResource(t *testing.T) {
+func TestAccProjectResource_basic(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	name := "terraform_test_project_" + acctest.RandString(5)
 	resource.Test(t, resource.TestCase{
@@ -28,10 +28,10 @@ func TestAccProjectResource(t *testing.T) {
 				Config: testAccProjectResourceConfig(name, teamId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersProjectExists("cherryservers_project.test"),
-					resource.TestMatchResourceAttr("cherryservers_project.test", "href", regexp.MustCompile("/projects/[0-9]{6}")),
+					resource.TestMatchResourceAttr("cherryservers_project.test", "href", regexp.MustCompile("/projects/[0-9]+")),
 					resource.TestCheckResourceAttr("cherryservers_project.test", "bgp.enabled", "false"),
 					resource.TestCheckResourceAttrSet("cherryservers_project.test", "bgp.local_asn"),
-					resource.TestMatchResourceAttr("cherryservers_project.test", "id", regexp.MustCompile("[0-9]{6}")),
+					resource.TestMatchResourceAttr("cherryservers_project.test", "id", regexp.MustCompile("[0-9]+")),
 				),
 			},
 			// ImportState testing
@@ -104,11 +104,13 @@ func testAccCheckCherryServersProjectDestroy(s *terraform.State) error {
 
 		if err != nil {
 			if is404Error(resp) {
-				return nil
+				continue
 			}
 
 			return fmt.Errorf("project listing error: %#v", err)
 		}
+
+		return fmt.Errorf("project still exists")
 	}
 
 	return nil

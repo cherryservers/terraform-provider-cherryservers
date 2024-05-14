@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -101,31 +100,23 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 			"image": schema.StringAttribute{
 				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images)",
 				Optional:    true,
-				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
 				Description: "Set of the SSH key IDs allowed to SSH to the server",
 				Optional:    true,
-				Computed:    true,
 				ElementType: types.StringType,
-				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.RequiresReplace(),
-					setplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
 				Description: "Set of the IP address IDs to be embedded into the Server",
 				Optional:    true,
-				Computed:    true,
 				ElementType: types.StringType,
-				Default:     setdefault.StaticValue(types.SetNull(types.StringType)),
 				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
 					setplanmodifier.RequiresReplace(),
 				},
 			},
