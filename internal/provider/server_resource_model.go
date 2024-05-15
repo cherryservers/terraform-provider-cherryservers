@@ -54,14 +54,15 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 
 	//d.Image = types.StringValue(server.Image)
 
-	var sshKeyIds, ipIds []string
+	var ipIds []string
+	/*var sshKeyIds, ipIds []string
 	for _, sshKey := range server.SSHKeys {
 		sshKeyID := strconv.Itoa(sshKey.ID)
 		sshKeyIds = append(sshKeyIds, sshKeyID)
 	}
 	sshKeyIdsTf, sshDiags := types.SetValueFrom(ctx, types.StringType, sshKeyIds)
 	d.SSHKeyIds = sshKeyIdsTf
-	diags.Append(sshDiags...)
+	diags.Append(sshDiags...)*/
 
 	var ips []attr.Value
 	for _, ip := range server.IPAddresses {
@@ -89,9 +90,9 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	diags.Append(ipsDiags...)
 	d.IpAddresses = ipsTf
 
-	ipIdsTf, ipIdDiags := types.SetValueFrom(ctx, types.StringType, ipIds)
+	/*ipIdsTf, ipIdDiags := types.SetValueFrom(ctx, types.StringType, ipIds)
 	d.ExtraIPAddressesIds = ipIdsTf
-	diags.Append(ipIdDiags...)
+	diags.Append(ipIdDiags...)*/
 
 	tags, tagsDiags := types.MapValueFrom(ctx, types.StringType, server.Tags)
 	d.Tags = tags

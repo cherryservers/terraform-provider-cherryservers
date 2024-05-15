@@ -17,9 +17,10 @@ import (
 
 func TestAccServerResource_basic(t *testing.T) {
 	serverResourceName := "terraform_test_server_" + acctest.RandString(5)
+	projectName := "terraform_test_project_" + acctest.RandString(5)
 	testPlan := "cloud_vps_1"
 	testRegion := "eu_nord_1"
-	serverID := os.Getenv("CHERRY_TEST_PROJECT_ID")
+	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -27,7 +28,7 @@ func TestAccServerResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccServerResourceConfigOnlyReq(testPlan, testRegion, serverResourceName, serverID),
+				Config: testAccServerResourceConfigOnlyReq(projectName, testPlan, testRegion, serverResourceName, teamID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersServerExists("cherryservers_server."+serverResourceName),
 					resource.TestCheckResourceAttr("cherryservers_server."+serverResourceName, "bmc.password", ""),
@@ -53,7 +54,7 @@ func TestAccServerResource_basic(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccServerResourceConfigUpdate(testPlan, testRegion, serverResourceName, serverID),
+				Config: testAccServerResourceConfigUpdate(projectName, testPlan, testRegion, serverResourceName, teamID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cherryservers_server."+serverResourceName, "name", "update"),
 					resource.TestCheckResourceAttr("cherryservers_server."+serverResourceName, "hostname", "server-update-test"),
@@ -121,27 +122,37 @@ func testAccCheckCherryServersServerDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccServerResourceConfigOnlyReq(plan string, region string, serverResourceName string, serverID string) string {
+func testAccServerResourceConfigOnlyReq(projectName string, plan string, region string, serverResourceName string, teamID string) string {
 	return fmt.Sprintf(`
-resource "cherryservers_server" "%s" {
-  region = "%s"
-  plan = "%s"
-  project_id = "%s"
-}
-`, serverResourceName, region, plan, serverID)
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%s"
 }
 
-func testAccServerResourceConfigUpdate(plan string, region string, serverResourceName string, serverID string) string {
-	return fmt.Sprintf(`
 resource "cherryservers_server" "%s" {
   region = "%s"
   plan = "%s"
-  project_id = "%s"
+  project_id = "${cherryservers_project.test_server_project.id}"
+}
+`, projectName, teamID, serverResourceName, region, plan)
+}
+
+func testAccServerResourceConfigUpdate(projectName string, plan string, region string, serverResourceName string, teamID string) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%s"
+}
+
+resource "cherryservers_server" "%s" {
+  region = "%s"
+  plan = "%s"
+  project_id = "${cherryservers_project.test_server_project.id}"
   name = "update"
   hostname = "server-update-test"
   tags = {
     env = "test"
   }
 }
-`, serverResourceName, region, plan, serverID)
+`, projectName, teamID, serverResourceName, region, plan)
 }

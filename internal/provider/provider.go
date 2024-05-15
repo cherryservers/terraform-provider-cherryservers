@@ -135,6 +135,7 @@ func (p *CherryServersProvider) DataSources(ctx context.Context) []func() dataso
 	return []func() datasource.DataSource{
 		NewProjectDataSource,
 		NewServerDataSource,
+		NewIpDataSource,
 	}
 }
 

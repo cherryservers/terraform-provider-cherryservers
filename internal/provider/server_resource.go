@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"golang.org/x/exp/slices"
 	"os"
 	"strconv"
 	"time"
@@ -82,20 +81,25 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		SpotInstance: data.SpotInstance.ValueBool(),
 	}
 
-	sshIds := make([]string, len(data.SSHKeyIds.Elements()))
-	diags := data.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
-	resp.Diagnostics.Append(diags...)
+	if !data.SSHKeyIds.IsUnknown() {
+		sshIds := make([]string, len(data.SSHKeyIds.Elements()))
+		diags := data.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
+		resp.Diagnostics.Append(diags...)
 
-	request.SSHKeys = sshIds
+		request.SSHKeys = sshIds
+	}
 
-	ipsIds := make([]string, len(data.ExtraIPAddressesIds.Elements()))
-	diags = data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
-	resp.Diagnostics.Append(diags...)
+	if !data.ExtraIPAddressesIds.IsUnknown() {
+		ipsIds := make([]string, len(data.ExtraIPAddressesIds.Elements()))
+		diags := data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
+		resp.Diagnostics.Append(diags...)
 
-	request.IPAddresses = ipsIds
+		request.IPAddresses = ipsIds
+
+	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))
-	diags = data.Tags.ElementsAs(ctx, &tagsMap, false)
+	diags := data.Tags.ElementsAs(ctx, &tagsMap, false)
 	resp.Diagnostics.Append(diags...)
 
 	request.Tags = &tagsMap
@@ -284,7 +288,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}*/
 
-	if !plan.ExtraIPAddressesIds.Equal(state.ExtraIPAddressesIds) {
+	/*if !plan.ExtraIPAddressesIds.Equal(state.ExtraIPAddressesIds) {
 		for _, ip := range plan.ExtraIPAddressesIds.Elements() {
 			if !slices.Contains(state.ExtraIPAddressesIds.Elements(), ip) {
 				ipRequest := cherrygo.UpdateIPAddress{
@@ -305,7 +309,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 				}
 			}
 		}
-	}
+	}*/
 
 	requestUpdate := cherrygo.UpdateServer{
 		Hostname: plan.Hostname.ValueString(),

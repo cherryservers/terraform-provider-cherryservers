@@ -5,6 +5,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"os"
 	"testing"
 
@@ -12,16 +13,17 @@ import (
 )
 
 func TestAccServerDataSource_basic(t *testing.T) {
-	projectId := os.Getenv("CHERRY_TEST_PROJECT_ID")
-	resourceName := "cherryservers_server.test_server_data_source"
-	dataSourceName := "data.cherryservers_server.test_server_data_source"
+	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
+	projectName := "terraform_test_project_" + acctest.RandString(5)
+	resourceName := "cherryservers_server.test_server_server"
+	dataSourceName := "data.cherryservers_server.test_server_server"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Read testing
 			{
-				Config: testAccServerDataSourceConfig(projectId),
+				Config: testAccServerDataSourceConfig(teamID, projectName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrPair(dataSourceName, "plan", resourceName, "plan"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "project_id", resourceName, "project_id"),
@@ -47,16 +49,21 @@ func TestAccServerDataSource_basic(t *testing.T) {
 	})
 }
 
-func testAccServerDataSourceConfig(projectID string) string {
+func testAccServerDataSourceConfig(teamID string, projectName string) string {
 	return fmt.Sprintf(`
-resource "cherryservers_server" "test_server_data_source" {
-  plan = "cloud_vps_1"
-  region = "eu_nord_1"
-  project_id = "%s"
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%s"
 }
 
-data "cherryservers_server" "test_server_data_source" {
-  id = cherryservers_server.test_server_data_source.id
+resource "cherryservers_server" "test_server_server" {
+  plan = "cloud_vps_1"
+  region = "eu_nord_1"
+  project_id = "${cherryservers_project.test_server_project.id}"
 }
-`, projectID)
+
+data "cherryservers_server" "test_server_server" {
+  id = cherryservers_server.test_server_server.id
+}
+`, projectName, teamID)
 }
