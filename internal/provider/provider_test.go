@@ -35,9 +35,6 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("CHERRY_TEST_TEAM_ID"); v == "" {
 		t.Fatal("CHERRY_TEST_TEAM_ID must be set for acceptance tests")
 	}
-	if v := os.Getenv("CHERRY_TEST_PROJECT_ID"); v == "" {
-		t.Fatal("CHERRY_TEST_PROJECT_ID must be set for acceptance tests")
-	}
 
 	//TODO
 	//Make version responsive (or better yet, use a provider instead of a client)
