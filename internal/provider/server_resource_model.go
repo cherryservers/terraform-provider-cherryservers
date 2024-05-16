@@ -54,7 +54,8 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 
 	//d.Image = types.StringValue(server.Image)
 
-	var sshKeyIds, ipIds []string
+	//var sshKeyIds, ipIds []string
+	var sshKeyIds []string
 	for _, sshKey := range server.SSHKeys {
 		sshKeyID := strconv.Itoa(sshKey.ID)
 		sshKeyIds = append(sshKeyIds, sshKeyID)
@@ -67,9 +68,9 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	for _, ip := range server.IPAddresses {
 
 		// ExtraIPAddresses shouldn't have unmodifiable (primary and private type) IPs
-		if ip.Type == "subnet" || ip.Type == "floating-ip" {
+		/*if ip.Type == "subnet" || ip.Type == "floating-ip" {
 			ipIds = append(ipIds, ip.ID)
-		}
+		}*/
 
 		ipModel := ipAddressFlatResourceModel{
 			Id:            types.StringValue(ip.ID),

@@ -349,7 +349,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	request.TargetedTo = target
 
 	ipID := data.Id.ValueString()
-	ip, _, err := r.client.IPAddresses.Update(ipID, &request)
+	_, _, err = r.client.IPAddresses.Update(ipID, &request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers ip resource",
@@ -358,7 +358,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	ip, _, err = r.client.IPAddresses.Get(ipID, nil)
+	ip, _, err := r.client.IPAddresses.Get(ipID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to read a CherryServers ip resource",
