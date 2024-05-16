@@ -54,15 +54,14 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 
 	//d.Image = types.StringValue(server.Image)
 
-	var ipIds []string
-	/*var sshKeyIds, ipIds []string
+	var sshKeyIds, ipIds []string
 	for _, sshKey := range server.SSHKeys {
 		sshKeyID := strconv.Itoa(sshKey.ID)
 		sshKeyIds = append(sshKeyIds, sshKeyID)
 	}
 	sshKeyIdsTf, sshDiags := types.SetValueFrom(ctx, types.StringType, sshKeyIds)
 	d.SSHKeyIds = sshKeyIdsTf
-	diags.Append(sshDiags...)*/
+	diags.Append(sshDiags...)
 
 	var ips []attr.Value
 	for _, ip := range server.IPAddresses {
