@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -104,7 +101,7 @@ func testAccCheckCherryServersServerDestroy(s *terraform.State) error {
 		if converr != nil {
 			return fmt.Errorf("unable to convert Server ID")
 		}
-		// Try to get the project
+
 		server, resp, err := client.Servers.Get(serverID, nil)
 
 		if err != nil {
@@ -112,7 +109,7 @@ func testAccCheckCherryServersServerDestroy(s *terraform.State) error {
 				continue
 			}
 
-			return fmt.Errorf("project listing error: %#v", err)
+			return fmt.Errorf("server listing error: %#v", err)
 		}
 
 		if server.State != "terminating" {
