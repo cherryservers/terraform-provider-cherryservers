@@ -1,4 +1,4 @@
-# Get project info by ID
-data "cherryservers_project" "by_id" {
-  project_id = "123"
+# Create a Project data source
+data "cherryservers_project" "cool_project" {
+  id = "123456"
 }

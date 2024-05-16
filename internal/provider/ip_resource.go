@@ -114,7 +114,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"target_id": schema.StringAttribute{
-				Description: "The ID of the server to which the IP is attached\n" +
+				Description: "The ID of the server to which the IP is attached.\n" +
 					"Conflicts with target_hostname and route_ip_id",
 				Optional: true,
 				Computed: true,
@@ -126,7 +126,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"target_hostname": schema.StringAttribute{
-				Description: "The hostname of the server to which the IP is attached\n" +
+				Description: "The hostname of the server to which the IP is attached.\n" +
 					"Conflicts with target_id and route_ip_id",
 				Optional: true,
 				Computed: true,
@@ -137,7 +137,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"route_ip_id": schema.StringAttribute{
-				Description: "Subnet or primary-ip type IP ID to route the created IP to\n" +
+				Description: "Subnet or primary-ip type IP ID to route the created IP to.\n" +
 					"Conflicts with target_hostname and target_id",
 				Optional: true,
 				Computed: true,
@@ -156,7 +156,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Optional:    true,
 			},
 			"a_record_actual": schema.StringAttribute{
-				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique\n" +
+				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.\n" +
 					"API return value",
 				Computed: true,
 			},
@@ -165,7 +165,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Description: "Reverse DNS name for the IP address",
 			},
 			"ptr_record_actual": schema.StringAttribute{
-				Description: "Reverse DNS name for the IP address, API return value",
+				Description: "Reverse DNS name for the IP address. API return value",
 				Computed:    true,
 			},
 			"address": schema.StringAttribute{

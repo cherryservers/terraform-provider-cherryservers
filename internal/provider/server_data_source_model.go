@@ -45,7 +45,7 @@ func (d *serverDataSourceModel) populateModel(server cherrygo.Server, ctx contex
 	d.BMC = resourceModel.BMC
 	d.Image = resourceModel.Image
 	d.SSHKeyIds = resourceModel.SSHKeyIds
-	d.ExtraIPAddressesIds = resourceModel.ExtraIPAddressesIds
+	//d.ExtraIPAddressesIds = resourceModel.ExtraIPAddressesIds
 	d.UserDataFile = resourceModel.UserDataFile
 	d.Tags = resourceModel.Tags
 	d.SpotInstance = resourceModel.SpotInstance

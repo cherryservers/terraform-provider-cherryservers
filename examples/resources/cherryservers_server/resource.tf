@@ -1,15 +1,15 @@
 #Create a new server:
 resource "cherryservers_server" "server" {
-  plan       = "e5_1620v4"
-  project_id = 102387
+  plan       = "cloud_vps_1"
+  project_id = 123456
   region     = "eu_nord_1"
 }
 
 #Create a new server with options:
 resource "cherryservers_server" "server" {
-  plan             = "e5_1620v4"
+  plan             = "cloud_vps_1"
   hostname         = "sharing-wallaby"
-  project_id       = 102387
+  project_id       = 123456
   region           = "eu_nord_1"
   image            = "ubuntu_22_04"
   ssh_key_ids      = ["1", "2"]
@@ -20,4 +20,3 @@ resource "cherryservers_server" "server" {
     Environment = "Production"
   }
 }
-

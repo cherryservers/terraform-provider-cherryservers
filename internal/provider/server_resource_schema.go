@@ -113,7 +113,7 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
-				Description: "Set of the IP address IDs to be embedded into the Server",
+				Description: "Set of the IP address IDs to be embedded into the server",
 				Optional:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
