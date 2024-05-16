@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -139,17 +136,7 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		)
 		return
 	}
-	// If applicable, this is a great opportunity to initialize any necessary
-	// provider client data and make a call using it.
-	// httpResp, err := d.client.Do(httpReq)
-	// if err != nil {
-	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read example, got error: %s", err))
-	//     return
-	// }
 
-	// For the purposes of this example code, hardcoding a response value to
-	// save into the Terraform state.
-	//data.Id = types.StringValue("example-id")
 	state.Id = types.Int64Value(int64(project.ID))
 	state.Href = types.StringValue(project.Href)
 	state.Name = types.StringValue(project.Name)
@@ -159,7 +146,6 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	// Write logs using the tflog package
-	// Documentation: https://terraform.io/plugin/log
 	tflog.Trace(ctx, "read a data source")
 
 	// Save data into Terraform state

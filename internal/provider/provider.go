@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -128,6 +125,7 @@ func (p *CherryServersProvider) Resources(ctx context.Context) []func() resource
 		NewProjectResource,
 		NewIpResource,
 		NewServerResource,
+		NewSSHKeyResource,
 	}
 }
 
@@ -136,13 +134,12 @@ func (p *CherryServersProvider) DataSources(ctx context.Context) []func() dataso
 		NewProjectDataSource,
 		NewServerDataSource,
 		NewIpDataSource,
+		NewSSHKeyDataSource,
 	}
 }
 
 func (p *CherryServersProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewExampleFunction,
-	}
+	return []func() function.Function{}
 }
 
 func New(version string) func() provider.Provider {

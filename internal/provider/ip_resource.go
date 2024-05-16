@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -361,6 +358,15 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
+	ip, _, err = r.client.IPAddresses.Get(ipID, nil)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"unable to read a CherryServers ip resource",
+			err.Error(),
+		)
+		return
+	}
+
 	data.populateState(ip, ctx, resp.Diagnostics)
 
 	ctx = tflog.SetField(ctx, "ip_id", data.Id)
@@ -409,7 +415,7 @@ func (r *ipResource) ImportState(ctx context.Context, req resource.ImportStateRe
 }
 
 func (d *ipResourceModel) getTargetId(r *ipResource) (string, error) {
-	if d.TargetId.ValueString() != "0" {
+	if d.TargetId.ValueString() != "0" && d.TargetId.ValueString() != "" {
 		return d.TargetId.ValueString(), nil
 	} else if d.TargetHostname.ValueString() != "" {
 		srvID, err := ServerHostnameToID(d.TargetHostname.ValueString(), int(d.ProjectId.ValueInt64()), r.client.Servers)
