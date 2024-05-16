@@ -18,7 +18,7 @@ func TestAccServerResource_basic(t *testing.T) {
 	testPlan := "cloud_vps_1"
 	testRegion := "eu_nord_1"
 	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCherryServersServerDestroy,

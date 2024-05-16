@@ -15,7 +15,7 @@ import (
 func TestAccProjectResource_basic(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	name := "terraform_test_project_" + acctest.RandString(5)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCherryServersProjectDestroy,
