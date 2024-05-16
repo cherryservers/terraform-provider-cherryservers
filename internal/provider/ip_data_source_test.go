@@ -14,7 +14,7 @@ func TestAccIpDataSource_basic(t *testing.T) {
 	projectName := "terraform_test_project_" + acctest.RandString(5)
 	resourceName := "cherryservers_ip.test_ip_ip"
 	dataSourceName := "data.cherryservers_ip.test_ip_ip"
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{

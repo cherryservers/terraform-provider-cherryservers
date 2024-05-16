@@ -14,7 +14,7 @@ func TestAccProjectDataSource(t *testing.T) {
 	name := "terraform_test_project_" + acctest.RandString(5)
 	resourceName := "cherryservers_project.test_data"
 	datasourceName := "data.cherryservers_project.test_data"
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{

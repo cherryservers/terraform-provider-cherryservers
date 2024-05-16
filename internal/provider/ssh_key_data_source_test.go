@@ -16,7 +16,7 @@ func TestAccSSHKeyDataSource_basic(t *testing.T) {
 	}
 	resourceName := "cherryservers_ssh_key.test_ssh_key_ssh_key"
 	dataSourceName := "data.cherryservers_ssh_key.test_ssh_key_ssh_key"
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{

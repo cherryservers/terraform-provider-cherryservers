@@ -21,7 +21,7 @@ func TestAccSSHKeyResource_basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot generate test SSH key pair: %s", err)
 	}
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCherryServersSSHKeyDestroy,
