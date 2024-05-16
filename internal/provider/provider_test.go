@@ -11,7 +11,7 @@ import (
 )
 
 // TODO
-// Use a provider instead of a client, when that functionality is available
+// Use a provider instead of a client, when that functionality is available.
 var testCherryGoClient *cherrygo.Client
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
