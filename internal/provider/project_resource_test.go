@@ -33,10 +33,10 @@ func TestAccProjectResource_basic(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:            "cherryservers_project.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"team_id"},
+				ResourceName:        "cherryservers_project.test",
+				ImportState:         true,
+				ImportStateIdPrefix: fmt.Sprintf("%s,", teamId),
+				ImportStateVerify:   true,
 			},
 			// Update and Read testing
 			{
