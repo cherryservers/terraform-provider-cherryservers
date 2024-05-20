@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
+	"strings"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -84,14 +85,14 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 			"href": schema.StringAttribute{
-				Description: "The hypertext reference attribute(href) of the project",
+				Description: "The hypertext reference attribute (href) of the project",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"bgp": schema.SingleNestedAttribute{
-				Description: "Project border gateway protocol(BGP) configuration.",
+				Description: "Project border gateway protocol (BGP) configuration.",
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Required:    true,
@@ -282,6 +283,23 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 }
 
+// ImportState workaround for project not knowing its teamID.
 func (r *projectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	idParts := strings.Split(req.ID, ",")
+
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: team_id,project_id. Got: %q", req.ID),
+		)
+		return
+	}
+
+	teamID, err := strconv.Atoi(idParts[0])
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid team_id Import Identifier", idParts[0])
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("team_id"), teamID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idParts[1])...)
 }

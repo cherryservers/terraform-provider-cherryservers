@@ -7,7 +7,7 @@ resource "cherryservers_project" "my_project" {
 
 # Create a new Project with BGP enabled
 resource "cherryservers_project" "project_with_bgp" {
-  team_id = "12456"
+  team_id = "123456"
   name    = "Cool project with BGP"
   bgp = {
     enabled = "true"
