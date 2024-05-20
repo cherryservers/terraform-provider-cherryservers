@@ -61,22 +61,12 @@ resource "cherryservers_project" "test" {
 
 func testAccCheckCherryServersProjectExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-
-		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("project ID is not set")
-		}
-		client := testCherryGoClient
-		projectID, err := strconv.Atoi(rs.Primary.ID)
+		projectID, err := testAccGetResourceIdInt(resourceName, "project", s)
 		if err != nil {
-			return fmt.Errorf("unable to convert Project ID")
+			return err
 		}
 
-		// Try to get the project id
-		_, _, err = client.Projects.Get(projectID, nil)
+		_, _, err = testCherryGoClient.Projects.Get(projectID, nil)
 		if err != nil {
 			return err
 		}
