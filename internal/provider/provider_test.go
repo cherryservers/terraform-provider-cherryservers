@@ -10,8 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
-// TODO
-// Use a provider instead of a client, when that functionality is available.
 var testCherryGoClient *cherrygo.Client
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -34,7 +32,7 @@ func testAccPreCheck(t *testing.T) {
 	}
 
 	//TODO
-	//Make version responsive (or better yet, use a provider instead of a client)
+	//Make user agent version responsive.
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", "test", "1.0.0")
 	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(os.Getenv("CHERRY_AUTH_KEY")), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)

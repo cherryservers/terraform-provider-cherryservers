@@ -69,6 +69,11 @@ func (r *sshKeyResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"fingerprint": schema.StringAttribute{
 				Computed:    true,
 				Description: "Fingerprint of the SSH public key",
+				PlanModifiers: []planmodifier.String{
+					UnknownDependingOnUpdateAttributePlanModifier([]string{
+						"public_key",
+					}),
+				},
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
