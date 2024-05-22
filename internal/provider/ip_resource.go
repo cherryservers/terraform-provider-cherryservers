@@ -123,6 +123,12 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 						path.MatchRoot("route_ip_id"),
 					}...),
 				},
+				PlanModifiers: []planmodifier.String{
+					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
+						"target_hostname",
+						"route_ip_id",
+					}),
+				},
 			},
 			"target_hostname": schema.StringAttribute{
 				Description: "The hostname of the server to which the IP is attached.\n" +
@@ -134,12 +140,24 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 						path.MatchRoot("route_ip_id"),
 					}...),
 				},
+				PlanModifiers: []planmodifier.String{
+					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
+						"target_id",
+						"route_ip_id",
+					}),
+				},
 			},
 			"route_ip_id": schema.StringAttribute{
 				Description: "Subnet or primary-ip type IP ID to route the created IP to.\n" +
 					"Conflicts with target_hostname and target_id",
 				Optional: true,
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
+						"target_hostname",
+						"target_id",
+					}),
+				},
 			},
 			"ddos_scrubbing": schema.BoolAttribute{
 				Description: "If true, DDOS scrubbing protection will be applied in real-time",
@@ -158,6 +176,11 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.\n" +
 					"API return value",
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
+						"a_record",
+					}),
+				},
 			},
 			"ptr_record": schema.StringAttribute{
 				Optional:    true,
@@ -166,6 +189,11 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 			"ptr_record_actual": schema.StringAttribute{
 				Description: "Reverse DNS name for the IP address. API return value",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
+						"ptr_record",
+					}),
+				},
 			},
 			"address": schema.StringAttribute{
 				Description: "The IP address in canonical format used in the reverse DNS record",
@@ -318,9 +346,20 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	request := cherrygo.UpdateIPAddress{
-		PtrRecord: data.PTRRecord.ValueString(),
-		ARecord:   data.ARecord.ValueString(),
-		RoutedTo:  data.RouteIPID.ValueString(),
+		ARecord:  data.ARecord.ValueString(),
+		RoutedTo: data.RouteIPID.ValueString(),
+	}
+
+	//The API returns error 500 if update is called with the same ptr_record as before, so check if it has changed.
+	var ptrState types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("ptr_record"), &ptrState)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !data.PTRRecord.Equal(ptrState) {
+		request.PtrRecord = data.PTRRecord.ValueString()
 	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))

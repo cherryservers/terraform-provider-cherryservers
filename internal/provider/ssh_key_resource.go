@@ -70,7 +70,7 @@ func (r *sshKeyResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				Description: "Fingerprint of the SSH public key",
 				PlanModifiers: []planmodifier.String{
-					UnknownDependingOnUpdateAttributePlanModifier([]string{
+					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
 						"public_key",
 					}),
 				},
