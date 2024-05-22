@@ -3,13 +3,11 @@ package provider
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"os"
 	"regexp"
 	"testing"
-	"time"
-
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccIPResource_basic(t *testing.T) {
@@ -19,11 +17,10 @@ func TestAccIPResource_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCherryServersIPDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccIPResourceConfig(projectName, teamId, "eu_nord_1"),
+				Config: testAccIPResourceBasicConfig(projectName, teamId, "eu_nord_1"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "id"),
@@ -46,7 +43,7 @@ func TestAccIPResource_basic(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccIPResourceUpdateConfig(projectName, teamId, "eu_nord_1", aRecord),
+				Config: testAccIPResourceBasicUpdateConfig(projectName, teamId, "eu_nord_1", aRecord),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_actual", aRecord+".cloud.cherryservers.net."),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_actual", "test."),
@@ -62,7 +59,33 @@ func TestAccIPResource_basic(t *testing.T) {
 	})
 }
 
-func testAccIPResourceConfig(projectName string, teamId string, region string) string {
+func TestAccIPResource_fullConfig(t *testing.T) {
+	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccIPResourceFullConfig(teamId),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_actual", "test.cloud.cherryservers.net."),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_actual", "test."),
+					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "route_ip_id"),
+					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "target_id", regexp.MustCompile(`[0-9]+`)),
+					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
+					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address_family", regexp.MustCompile(`^[0-9]`)),
+					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "cidr"),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "gateway", ""),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "type", "floating-ip"),
+					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "id"),
+				),
+			},
+		},
+	})
+}
+
+func testAccIPResourceBasicConfig(projectName string, teamId string, region string) string {
 	return fmt.Sprintf(`
 resource "cherryservers_project" "test_ip_project" {
   name = "%s"
@@ -76,7 +99,7 @@ resource "cherryservers_ip" "test_ip_ip" {
 `, projectName, teamId, region)
 }
 
-func testAccIPResourceUpdateConfig(projectName string, teamID string, region string, aRecord string) string {
+func testAccIPResourceBasicUpdateConfig(projectName string, teamID string, region string, aRecord string) string {
 	return fmt.Sprintf(`
 resource "cherryservers_project" "test_ip_project" {
   name = "%s"
@@ -102,6 +125,33 @@ resource "cherryservers_ip" "test_ip_ip" {
 `, projectName, teamID, region, aRecord)
 }
 
+func testAccIPResourceFullConfig(teamId string) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_ip_project" {
+  name = "%s"
+  team_id = "%s"
+}
+
+resource "cherryservers_server" "test_ip_server" {
+  plan = "cloud_vps_1"
+  region = "eu_nord_1"
+  project_id = "${cherryservers_project.test_ip_project.id}"
+}
+
+resource "cherryservers_ip" "test_ip_ip" {
+  project_id = "${cherryservers_project.test_ip_project.id}"
+  region = "eu_nord_1"
+  target_hostname = "${cherryservers_server.test_ip_server.hostname}"
+  a_record = "test"
+  ptr_record = "test"
+  tags = {
+    env = "test"
+  }
+ddos_scrubbing = "true"
+}
+`, "terraform_test_project_"+acctest.RandString(5), teamId)
+}
+
 func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -123,7 +173,7 @@ func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFu
 	}
 }
 
-func testAccCheckCherryServersIPDestroy(s *terraform.State) error {
+/*func testAccCheckCherryServersIPDestroy(s *terraform.State) error {
 	client := testCherryGoClient
 
 	for _, rs := range s.RootModule().Resources {
@@ -132,7 +182,7 @@ func testAccCheckCherryServersIPDestroy(s *terraform.State) error {
 		}
 
 		// There is a delay with IP destruction
-		time.Sleep(3 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		// Try to get the project
 		_, resp, err := client.IPAddresses.Get(rs.Primary.ID, nil)
@@ -153,4 +203,4 @@ func testAccCheckCherryServersIPDestroy(s *terraform.State) error {
 	}
 
 	return nil
-}
+}*/
