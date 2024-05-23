@@ -13,7 +13,7 @@ Provides a CherryServers Project data source. This can be used to read project d
 ## Example Usage
 
 ```terraform
-# Create a Project data source
+# Create a Project data source.
 data "cherryservers_project" "cool_project" {
   id = "123456"
 }
@@ -24,18 +24,18 @@ data "cherryservers_project" "cool_project" {
 
 ### Required
 
-- `id` (Number) Project identifier
+- `id` (Number) Project identifier.
 
 ### Read-Only
 
 - `bgp` (Attributes) Project border gateway protocol(BGP) configuration. (see [below for nested schema](#nestedatt--bgp))
-- `href` (String) The hypertext reference attribute(href) of the project
-- `name` (String) The name of the project
+- `href` (String) The hypertext reference attribute(href) of the project.
+- `name` (String) The name of the project.
 
 <a id="nestedatt--bgp"></a>
 ### Nested Schema for `bgp`
 
 Read-Only:
 
-- `enabled` (Boolean) BGP is enabled for the project
-- `local_asn` (Number) The local ASN of the project
+- `enabled` (Boolean) BGP is enabled for the project.
+- `local_asn` (Number) The local ASN of the project.

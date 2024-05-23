@@ -40,4 +40,4 @@ provider "cherryservers" {
 
 ### Optional
 
-- `api_key` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API
+- `api_key` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API.

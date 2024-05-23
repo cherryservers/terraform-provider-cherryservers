@@ -4,14 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &serverDataSource{}
-var _ datasource.DataSourceWithConfigure = &serverDataSource{}
+var (
+	_ datasource.DataSource                     = &serverDataSource{}
+	_ datasource.DataSourceWithConfigure        = &serverDataSource{}
+	_ datasource.DataSourceWithConfigValidators = &serverDataSource{}
+)
 
 func NewServerDataSource() datasource.DataSource {
 	return &serverDataSource{}
@@ -24,6 +29,14 @@ type serverDataSource struct {
 
 func (d *serverDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_server"
+}
+
+func (d *serverDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.ExactlyOneOf(path.MatchRoot("hostname"), path.MatchRoot("id")),
+		datasourcevalidator.ExactlyOneOf(path.MatchRoot("project_id"), path.MatchRoot("id")),
+		datasourcevalidator.RequiredTogether(path.MatchRoot("hostname"), path.MatchRoot("project_id")),
+	}
 }
 
 func (d *serverDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -60,11 +73,23 @@ func (d *serverDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	serverID, err := strconv.Atoi(data.Id.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("invalid server ID", err.Error())
-		return
+	var serverID int
+	if data.Hostname.ValueString() != "" {
+		var err error
+		serverID, err = ServerHostnameToID(data.Hostname.ValueString(), int(data.ProjectId.ValueInt64()), d.client.Servers)
+		if err != nil {
+			resp.Diagnostics.AddError("couldn't find server ID from hostname", err.Error())
+			return
+		}
+	} else {
+		var err error
+		serverID, err = strconv.Atoi(data.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("invalid server ID", err.Error())
+			return
+		}
 	}
+
 	server, _, err := d.client.Servers.Get(serverID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("server not found", err.Error())

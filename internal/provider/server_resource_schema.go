@@ -28,24 +28,24 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Description: "Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans)",
+				Description: "Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).",
 			},
 			"project_id": schema.Int64Attribute{
-				Description: "CherryServers project id, associated with the server",
+				Description: "CherryServers project id, associated with the server.",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"region": schema.StringAttribute{
-				Description: "Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions)",
+				Description: "Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Name of the server",
+				Description: "Name of the server.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -53,7 +53,7 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"hostname": schema.StringAttribute{
-				Description: "Hostname of the server",
+				Description: "Hostname of the server.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -61,14 +61,14 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"username": schema.StringAttribute{
-				Description: "Server username credential",
+				Description: "Server username credential.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"password": schema.StringAttribute{
-				Description: "Server password credential",
+				Description: "Server password credential.",
 				Computed:    true,
 				Sensitive:   true,
 				PlanModifiers: []planmodifier.String{
@@ -76,7 +76,7 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"bmc": schema.SingleNestedAttribute{
-				Description: "Server BMC credentials",
+				Description: "Server BMC credentials.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.Object{
 					objectplanmodifier.UseStateForUnknown(),
@@ -98,14 +98,14 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"image": schema.StringAttribute{
-				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images)",
+				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).",
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
-				Description: "Set of the SSH key IDs allowed to SSH to the server",
+				Description: "Set of the SSH key IDs allowed to SSH to the server.",
 				Optional:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
@@ -113,7 +113,7 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
-				Description: "Set of the IP address IDs to be embedded into the server",
+				Description: "Set of the IP address IDs to be embedded into the server.",
 				Optional:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
@@ -121,14 +121,14 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"user_data_file": schema.StringAttribute{
-				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script",
+				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"tags": schema.MapAttribute{
-				Description: "Key/value metadata for server tagging",
+				Description: "Key/value metadata for server tagging.",
 				Optional:    true,
 				ElementType: types.StringType,
 				Default:     mapdefault.StaticValue(types.MapValueMust(types.StringType, map[string]attr.Value{})),
@@ -138,7 +138,7 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"spot_instance": schema.BoolAttribute{
-				Description: "If True, provisions the server as a spot instance",
+				Description: "If True, provisions the server as a spot instance.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
@@ -148,14 +148,14 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"os_partition_size": schema.Int64Attribute{
-				Description: "OS partition size in GB",
+				Description: "OS partition size in GB.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"power_state": schema.StringAttribute{
-				Description: "The power state of the server, such as 'Powered off' or 'Powered on'",
+				Description: "The power state of the server, such as 'Powered off' or 'Powered on'.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -163,14 +163,14 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"state": schema.StringAttribute{
-				Description: "The state of the server, such as 'pending' or 'active'",
+				Description: "The state of the server, such as 'pending' or 'active'.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ip_addresses": schema.SetNestedAttribute{
-				Description: "IP addresses attached to the server",
+				Description: "IP addresses attached to the server.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
 					//IpAddressDependantOnExtraModifier(),
@@ -180,35 +180,35 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description: "ID of the IP address",
+							Description: "ID of the IP address.",
 							Computed:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.UseStateForUnknown(),
 							},
 						},
 						"type": schema.StringAttribute{
-							Description: "Type of the IP address",
+							Description: "Type of the IP address.",
 							Computed:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.UseStateForUnknown(),
 							},
 						},
 						"address": schema.StringAttribute{
-							Description: "Address of the IP address",
+							Description: "Address of the IP address.",
 							Computed:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.UseStateForUnknown(),
 							},
 						},
 						"address_family": schema.Int64Attribute{
-							Description: "Address family of the IP address",
+							Description: "Address family of the IP address.",
 							Computed:    true,
 							PlanModifiers: []planmodifier.Int64{
 								int64planmodifier.UseStateForUnknown(),
 							},
 						},
 						"cidr": schema.StringAttribute{
-							Description: "CIDR of the IP address",
+							Description: "CIDR of the IP address.",
 							Computed:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.UseStateForUnknown(),
@@ -219,7 +219,7 @@ func serverResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Server identifier",
+				Description: "Server identifier.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

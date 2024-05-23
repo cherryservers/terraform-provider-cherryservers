@@ -3,12 +3,12 @@
 page_title: "cherryservers_project Resource - cherryservers"
 subcategory: ""
 description: |-
-  Provides a CherryServers project resource. This can be used to create, modify, and delete projects
+  Provides a CherryServers project resource. This can be used to create, modify, and delete projects.
 ---
 
 # cherryservers_project (Resource)
 
-Provides a CherryServers project resource. This can be used to create, modify, and delete projects
+Provides a CherryServers project resource. This can be used to create, modify, and delete projects.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ resource "cherryservers_project" "my_project" {
 
 # Create a new Project with BGP enabled
 resource "cherryservers_project" "project_with_bgp" {
-  team_id = "12456"
+  team_id = "123456"
   name    = "Cool project with BGP"
   bgp = {
     enabled = "true"
@@ -35,28 +35,28 @@ resource "cherryservers_project" "project_with_bgp" {
 
 ### Required
 
-- `name` (String) The name of the project
-- `team_id` (Number) The ID of the team that owns the project
+- `name` (String) The name of the project.
+- `team_id` (Number) The ID of the team that owns the project.
 
 ### Optional
 
-- `bgp` (Attributes) Project border gateway protocol(BGP) configuration. (see [below for nested schema](#nestedatt--bgp))
+- `bgp` (Attributes) Project border gateway protocol (BGP) configuration. (see [below for nested schema](#nestedatt--bgp))
 
 ### Read-Only
 
-- `href` (String) The hypertext reference attribute(href) of the project
-- `id` (String) Project identifier
+- `href` (String) The hypertext reference attribute (href) of the project.
+- `id` (String) Project identifier.
 
 <a id="nestedatt--bgp"></a>
 ### Nested Schema for `bgp`
 
 Required:
 
-- `enabled` (Boolean) BGP is enabled for the project
+- `enabled` (Boolean) BGP is enabled for the project.
 
 Read-Only:
 
-- `local_asn` (Number) The local ASN of the project
+- `local_asn` (Number) The local ASN of the project.
 
 ## Import
 

@@ -42,7 +42,7 @@ func (p *CherryServersProvider) Schema(ctx context.Context, req provider.SchemaR
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"api_key": schema.StringAttribute{
-				Description: "Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API",
+				Description: "Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API.",
 				Optional:    true,
 				Sensitive:   true,
 			},
