@@ -88,33 +88,33 @@ func (r *ipResource) Metadata(ctx context.Context, req resource.MetadataRequest,
 func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		Description: "Provides a CherryServers IP resource. This can be used to create, modify, and delete IP addresses",
+		Description: "Provides a CherryServers IP resource. This can be used to create, modify, and delete IP addresses.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "IP identifier",
+				Description: "IP identifier.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"project_id": schema.Int64Attribute{
-				Description: "CherryServers project id, associated with the IP",
+				Description: "CherryServers project id, associated with the IP.",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"region": schema.StringAttribute{
-				Description: "Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions)",
+				Description: "Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"target_id": schema.StringAttribute{
-				Description: "The ID of the server to which the IP is attached.\n" +
-					"Conflicts with target_hostname and route_ip_id",
+				Description: "The ID of the server to which the IP is attached." +
+					"Conflicts with target_hostname and route_ip_id.",
 				Optional: true,
 				Computed: true,
 				Validators: []validator.String{
@@ -131,8 +131,8 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"target_hostname": schema.StringAttribute{
-				Description: "The hostname of the server to which the IP is attached.\n" +
-					"Conflicts with target_id and route_ip_id",
+				Description: "The hostname of the server to which the IP is attached." +
+					"Conflicts with target_id and route_ip_id.",
 				Optional: true,
 				Computed: true,
 				Validators: []validator.String{
@@ -148,8 +148,8 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"route_ip_id": schema.StringAttribute{
-				Description: "Subnet or primary-ip type IP ID to route the created IP to.\n" +
-					"Conflicts with target_hostname and target_id",
+				Description: "Subnet or primary-ip type IP ID to route the created IP to." +
+					"Conflicts with target_hostname and target_id.",
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
@@ -160,7 +160,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"ddos_scrubbing": schema.BoolAttribute{
-				Description: "If true, DDOS scrubbing protection will be applied in real-time",
+				Description: "If true, DDOS scrubbing protection will be applied in real-time.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
@@ -169,12 +169,12 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"a_record": schema.StringAttribute{
-				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique",
+				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.",
 				Optional:    true,
 			},
 			"a_record_actual": schema.StringAttribute{
-				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.\n" +
-					"API return value",
+				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique." +
+					"API return value.",
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
@@ -184,10 +184,10 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 			},
 			"ptr_record": schema.StringAttribute{
 				Optional:    true,
-				Description: "Reverse DNS name for the IP address",
+				Description: "Reverse DNS name for the IP address.",
 			},
 			"ptr_record_actual": schema.StringAttribute{
-				Description: "Reverse DNS name for the IP address. API return value",
+				Description: "Reverse DNS name for the IP address. API return value.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
@@ -196,42 +196,42 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				},
 			},
 			"address": schema.StringAttribute{
-				Description: "The IP address in canonical format used in the reverse DNS record",
+				Description: "The IP address in canonical format used in the reverse DNS record.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"address_family": schema.Int64Attribute{
-				Description: "IP address family IPv4 or IPv6",
+				Description: "IP address family IPv4 or IPv6.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"cidr": schema.StringAttribute{
-				Description: "The CIDR block of the IP",
+				Description: "The CIDR block of the IP.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"gateway": schema.StringAttribute{
-				Description: "The gateway IP address",
+				Description: "The gateway IP address.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"type": schema.StringAttribute{
-				Description: "The type of IP address",
+				Description: "The type of IP address.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"tags": schema.MapAttribute{
-				Description: "Key/value metadata for server tagging",
+				Description: "Key/value metadata for server tagging.",
 				Optional:    true,
 				ElementType: types.StringType,
 				Default:     mapdefault.StaticValue(types.MapValueMust(types.StringType, map[string]attr.Value{})),

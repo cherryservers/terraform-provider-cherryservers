@@ -70,22 +70,22 @@ func (r *projectResource) Metadata(ctx context.Context, req resource.MetadataReq
 func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		Description: "Provides a CherryServers project resource. This can be used to create, modify, and delete projects",
+		Description: "Provides a CherryServers project resource. This can be used to create, modify, and delete projects.",
 
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
-				Description: "The name of the project",
+				Description: "The name of the project.",
 				Required:    true,
 			},
 			"team_id": schema.Int64Attribute{
-				Description: "The ID of the team that owns the project",
+				Description: "The ID of the team that owns the project.",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"href": schema.StringAttribute{
-				Description: "The hypertext reference attribute (href) of the project",
+				Description: "The hypertext reference attribute (href) of the project.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -96,11 +96,11 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Required:    true,
-						Description: "BGP is enabled for the project",
+						Description: "BGP is enabled for the project.",
 					},
 					"local_asn": schema.Int64Attribute{
 						Computed:    true,
-						Description: "The local ASN of the project",
+						Description: "The local ASN of the project.",
 						PlanModifiers: []planmodifier.Int64{
 							int64planmodifier.UseStateForUnknown(),
 						},
@@ -120,7 +120,7 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 						})),
 			},
 			"id": schema.StringAttribute{
-				Description: "Project identifier",
+				Description: "Project identifier.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),

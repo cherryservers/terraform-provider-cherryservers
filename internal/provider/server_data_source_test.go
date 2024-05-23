@@ -22,6 +22,7 @@ func TestAccServerDataSource_basic(t *testing.T) {
 			{
 				Config: testAccServerDataSourceConfig(teamID, projectName),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					//Check by ID.
 					resource.TestCheckResourceAttrPair(dataSourceName, "plan", resourceName, "plan"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "project_id", resourceName, "project_id"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "region", resourceName, "region"),
@@ -40,6 +41,25 @@ func TestAccServerDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceName, "power_state", resourceName, "power_state"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "state", resourceName, "state"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "ip_addresses", resourceName, "ip_addresses"),
+					//Check by hostname.
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "plan", resourceName, "plan"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "project_id", resourceName, "project_id"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "region", resourceName, "region"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "hostname", resourceName, "hostname"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "name", resourceName, "name"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "username", resourceName, "username"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "password", resourceName, "password"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "bmc", resourceName, "bmc"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "image", resourceName, "image"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "ssh_key_ids", resourceName, "ssh_key_ids"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "extra_ip_addresses_ids", resourceName, "extra_ip_addresses_ids"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "user_data_file", resourceName, "user_data_file"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "tags", resourceName, "tags"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "spot_instance", resourceName, "spot_instance"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "os_partition_size", resourceName, "os_partition_size"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "power_state", resourceName, "power_state"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "state", resourceName, "state"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "ip_addresses", resourceName, "ip_addresses"),
 				),
 			},
 		},
@@ -61,6 +81,11 @@ resource "cherryservers_server" "test_server_server" {
 
 data "cherryservers_server" "test_server_server" {
   id = cherryservers_server.test_server_server.id
+}
+
+data "cherryservers_server" "test_server_server_by_hostname" {
+  hostname = "${cherryservers_server.test_server_server.hostname}"
+  project_id = "${cherryservers_server.test_server_server.project_id}"
 }
 `, projectName, teamID)
 }

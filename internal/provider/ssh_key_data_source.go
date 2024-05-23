@@ -4,15 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &sshKeyDataSource{}
-var _ datasource.DataSourceWithConfigure = &sshKeyDataSource{}
+var (
+	_ datasource.DataSource                     = &sshKeyDataSource{}
+	_ datasource.DataSourceWithConfigure        = &sshKeyDataSource{}
+	_ datasource.DataSourceWithConfigValidators = &sshKeyDataSource{}
+)
 
 func NewSSHKeyDataSource() datasource.DataSource {
 	return &sshKeyDataSource{}
@@ -23,6 +29,34 @@ type sshKeyDataSource struct {
 	client *cherrygo.Client
 }
 
+// sshKeyDataSourceModel describes the resource data model.
+type sshKeyDataSourceModel struct {
+	Label       types.String `tfsdk:"label"`
+	PublicKey   types.String `tfsdk:"public_key"`
+	Fingerprint types.String `tfsdk:"fingerprint"`
+	Created     types.String `tfsdk:"created"`
+	Updated     types.String `tfsdk:"updated"`
+	ID          types.String `tfsdk:"id"`
+	ProjectID   types.Int64  `tfsdk:"project_id"`
+}
+
+func (d *sshKeyDataSourceModel) populateModel(sshKey cherrygo.SSHKey) {
+	d.Label = types.StringValue(sshKey.Label)
+	d.PublicKey = types.StringValue(sshKey.Key)
+	d.Fingerprint = types.StringValue(sshKey.Fingerprint)
+	d.Created = types.StringValue(sshKey.Created)
+	d.Updated = types.StringValue(sshKey.Updated)
+	d.ID = types.StringValue(strconv.Itoa(sshKey.ID))
+}
+
+func (d *sshKeyDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.ExactlyOneOf(path.MatchRoot("label"), path.MatchRoot("id")),
+		datasourcevalidator.ExactlyOneOf(path.MatchRoot("project_id"), path.MatchRoot("id")),
+		datasourcevalidator.RequiredTogether(path.MatchRoot("label"), path.MatchRoot("project_id")),
+	}
+}
+
 func (d *sshKeyDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_ssh_key"
 }
@@ -30,32 +64,38 @@ func (d *sshKeyDataSource) Metadata(ctx context.Context, req datasource.Metadata
 func (d *sshKeyDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		Description: "Provides a CherryServers SSH Key data source. This can be used to read SSH Keys associated with your Cherry account",
+		Description: "Provides a CherryServers SSH Key data source. This can be used to read SSH Keys associated with your Cherry account.",
 
 		Attributes: map[string]schema.Attribute{
 			"label": schema.StringAttribute{
 				Computed:    true,
-				Description: "Label of the SSH key",
+				Optional:    true,
+				Description: "Label of the SSH key.",
 			},
 			"public_key": schema.StringAttribute{
 				Computed:    true,
-				Description: "Public SSH key",
+				Description: "Public SSH key.",
 			},
 			"fingerprint": schema.StringAttribute{
 				Computed:    true,
-				Description: "Fingerprint of the SSH public key",
+				Description: "Fingerprint of the SSH public key.",
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date when this Key was created",
+				Description: "Date when this Key was created.",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date when this Key was last modified",
+				Description: "Date when this Key was last modified.",
 			},
 			"id": schema.StringAttribute{
-				Required:    true,
-				Description: "ID of the SSH Key",
+				Optional:    true,
+				Computed:    true,
+				Description: "ID of the SSH Key.",
+			},
+			"project_id": schema.Int64Attribute{
+				Optional:    true,
+				Description: "ID of the project associated with the SSH Key.",
 			},
 		},
 	}
@@ -82,7 +122,7 @@ func (d *sshKeyDataSource) Configure(ctx context.Context, req datasource.Configu
 }
 
 func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state sshKeyResourceModel
+	var state sshKeyDataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -91,10 +131,31 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	sshKeyID, err := strconv.Atoi(state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("invalid SSH Key ID in state", err.Error())
-		return
+	var sshKeyID int
+	//Get SSH key ID by label and project ID.
+	if state.ProjectID.ValueInt64() != 0 {
+		sshKeys, _, err := d.client.Projects.ListSSHKeys(int(state.ProjectID.ValueInt64()), nil)
+		if err != nil {
+			resp.Diagnostics.AddError("couldn't read project SSHKeys", err.Error())
+			return
+		}
+		for _, sshKey := range sshKeys {
+			if sshKey.Label == state.Label.ValueString() {
+				if sshKeyID != 0 {
+					resp.Diagnostics.AddError("multiple SSH keys with the same label", "multiple SSH keys with the same label")
+					return
+				}
+				sshKeyID = sshKey.ID
+			}
+		}
+		//Get SSH key ID straight from schema.
+	} else {
+		var err error
+		sshKeyID, err = strconv.Atoi(state.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("invalid SSH Key ID in state", err.Error())
+			return
+		}
 	}
 
 	sshKey, _, err := d.client.SSHKeys.Get(sshKeyID, nil)

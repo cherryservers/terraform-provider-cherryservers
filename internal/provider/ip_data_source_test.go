@@ -22,6 +22,7 @@ func TestAccIpDataSource_basic(t *testing.T) {
 			{
 				Config: testAccIpDataSourceConfig(teamID, projectName),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					//By ID checks.
 					resource.TestCheckResourceAttrPair(dataSourceName, "project_id", resourceName, "project_id"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "region", resourceName, "region"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "target_id", resourceName, "target_id"),
@@ -36,6 +37,21 @@ func TestAccIpDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceName, "gateway", resourceName, "gateway"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "type", resourceName, "type"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "tags", resourceName, "tags"),
+					//By address checks.
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "project_id", resourceName, "project_id"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "region", resourceName, "region"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "target_id", resourceName, "target_id"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "target_hostname", resourceName, "target_hostname"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "route_ip_id", resourceName, "route_ip_id"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "ddos_scrubbing", resourceName, "ddos_scrubbing"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "a_record_actual", resourceName, "a_record_actual"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "ptr_record_actual", resourceName, "ptr_record_actual"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "address", resourceName, "address"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "address_family", resourceName, "address_family"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "cidr", resourceName, "cidr"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "gateway", resourceName, "gateway"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "type", resourceName, "type"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_ip.test_ip_ip_by_address", "tags", resourceName, "tags"),
 				),
 			},
 		},
@@ -56,6 +72,11 @@ resource "cherryservers_ip" "test_ip_ip" {
 
 data "cherryservers_ip" "test_ip_ip" {
   id = cherryservers_ip.test_ip_ip.id
+}
+
+data "cherryservers_ip" "test_ip_ip_by_address" {
+  address = "${cherryservers_ip.test_ip_ip.address}"
+  project_id = "${cherryservers_project.test_ip_project.id}"
 }
 `, projectName, teamID)
 }

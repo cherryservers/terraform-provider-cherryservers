@@ -55,20 +55,20 @@ func (r *sshKeyResource) Metadata(ctx context.Context, req resource.MetadataRequ
 func (r *sshKeyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		Description: "Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account",
+		Description: "Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account.",
 
 		Attributes: map[string]schema.Attribute{
 			"label": schema.StringAttribute{
 				Required:    true,
-				Description: "Label of the SSH key",
+				Description: "Label of the SSH key.",
 			},
 			"public_key": schema.StringAttribute{
 				Required:    true,
-				Description: "Public SSH key",
+				Description: "Public SSH key.",
 			},
 			"fingerprint": schema.StringAttribute{
 				Computed:    true,
-				Description: "Fingerprint of the SSH public key",
+				Description: "Fingerprint of the SSH public key.",
 				PlanModifiers: []planmodifier.String{
 					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
 						"public_key",
@@ -77,18 +77,18 @@ func (r *sshKeyResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date when this Key was created",
+				Description: "Date when this Key was created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date when this Key was last modified",
+				Description: "Date when this Key was last modified.",
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "ID of the SSH Key",
+				Description: "ID of the SSH Key.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

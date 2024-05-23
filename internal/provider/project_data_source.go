@@ -56,11 +56,11 @@ func (d *projectDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
-				Description: "The name of the project",
+				Description: "The name of the project.",
 				Computed:    true,
 			},
 			"href": schema.StringAttribute{
-				Description: "The hypertext reference attribute(href) of the project",
+				Description: "The hypertext reference attribute(href) of the project.",
 				Computed:    true,
 			},
 			"bgp": schema.SingleNestedAttribute{
@@ -68,17 +68,17 @@ func (d *projectDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Computed:    true,
-						Description: "BGP is enabled for the project",
+						Description: "BGP is enabled for the project.",
 					},
 					"local_asn": schema.Int64Attribute{
 						Computed:    true,
-						Description: "The local ASN of the project",
+						Description: "The local ASN of the project.",
 					},
 				},
 				Computed: true,
 			},
 			"id": schema.Int64Attribute{
-				Description: "Project identifier",
+				Description: "Project identifier.",
 				Required:    true,
 			},
 		},

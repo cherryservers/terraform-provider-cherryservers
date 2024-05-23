@@ -3,12 +3,12 @@
 page_title: "cherryservers_ip Resource - cherryservers"
 subcategory: ""
 description: |-
-  Provides a CherryServers IP resource. This can be used to create, modify, and delete IP addresses
+  Provides a CherryServers IP resource. This can be used to create, modify, and delete IP addresses.
 ---
 
 # cherryservers_ip (Resource)
 
-Provides a CherryServers IP resource. This can be used to create, modify, and delete IP addresses
+Provides a CherryServers IP resource. This can be used to create, modify, and delete IP addresses.
 
 ## Example Usage
 
@@ -37,33 +37,29 @@ resource "cherryservers_ip" "floating-1" {
 
 ### Required
 
-- `project_id` (Number) CherryServers project id, associated with the IP
-- `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions)
+- `project_id` (Number) CherryServers project id, associated with the IP.
+- `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 
 ### Optional
 
-- `a_record` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique
-- `ddos_scrubbing` (Boolean) If true, DDOS scrubbing protection will be applied in real-time
-- `ptr_record` (String) Reverse DNS name for the IP address
-- `route_ip_id` (String) Subnet or primary-ip type IP ID to route the created IP to.
-Conflicts with target_hostname and target_id
-- `tags` (Map of String) Key/value metadata for server tagging
-- `target_hostname` (String) The hostname of the server to which the IP is attached.
-Conflicts with target_id and route_ip_id
-- `target_id` (String) The ID of the server to which the IP is attached.
-Conflicts with target_hostname and route_ip_id
+- `a_record` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.
+- `ddos_scrubbing` (Boolean) If true, DDOS scrubbing protection will be applied in real-time.
+- `ptr_record` (String) Reverse DNS name for the IP address.
+- `route_ip_id` (String) Subnet or primary-ip type IP ID to route the created IP to.Conflicts with target_hostname and target_id.
+- `tags` (Map of String) Key/value metadata for server tagging.
+- `target_hostname` (String) The hostname of the server to which the IP is attached.Conflicts with target_id and route_ip_id.
+- `target_id` (String) The ID of the server to which the IP is attached.Conflicts with target_hostname and route_ip_id.
 
 ### Read-Only
 
-- `a_record_actual` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.
-API return value
-- `address` (String) The IP address in canonical format used in the reverse DNS record
-- `address_family` (Number) IP address family IPv4 or IPv6
-- `cidr` (String) The CIDR block of the IP
-- `gateway` (String) The gateway IP address
-- `id` (String) IP identifier
-- `ptr_record_actual` (String) Reverse DNS name for the IP address. API return value
-- `type` (String) The type of IP address
+- `a_record_actual` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.API return value.
+- `address` (String) The IP address in canonical format used in the reverse DNS record.
+- `address_family` (Number) IP address family IPv4 or IPv6.
+- `cidr` (String) The CIDR block of the IP.
+- `gateway` (String) The gateway IP address.
+- `id` (String) IP identifier.
+- `ptr_record_actual` (String) Reverse DNS name for the IP address. API return value.
+- `type` (String) The type of IP address.
 
 ## Import
 

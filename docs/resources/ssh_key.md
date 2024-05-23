@@ -3,12 +3,12 @@
 page_title: "cherryservers_ssh_key Resource - cherryservers"
 subcategory: ""
 description: |-
-  Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account
+  Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account.
 ---
 
 # cherryservers_ssh_key (Resource)
 
-Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account
+Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account.
 
 ## Example Usage
 
@@ -32,15 +32,15 @@ resource "cherryservers_ssh" "my_ssh_key" {
 
 ### Required
 
-- `label` (String) Label of the SSH key
-- `public_key` (String) Public SSH key
+- `label` (String) Label of the SSH key.
+- `public_key` (String) Public SSH key.
 
 ### Read-Only
 
-- `created` (String) Date when this Key was created
-- `fingerprint` (String) Fingerprint of the SSH public key
-- `id` (String) ID of the SSH Key
-- `updated` (String) Date when this Key was last modified
+- `created` (String) Date when this Key was created.
+- `fingerprint` (String) Fingerprint of the SSH public key.
+- `id` (String) ID of the SSH Key.
+- `updated` (String) Date when this Key was last modified.
 
 ## Import
 
