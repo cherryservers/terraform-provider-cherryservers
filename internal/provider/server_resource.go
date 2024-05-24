@@ -55,6 +55,7 @@ type serverResourceModel struct {
 	Password            types.String   `tfsdk:"password"`
 	BMC                 types.Object   `tfsdk:"bmc"`
 	Image               types.String   `tfsdk:"image"`
+	ImageSlug           types.String   `tfsdk:"image_slug"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
 	UserDataFile        types.String   `tfsdk:"user_data_file"`
@@ -86,10 +87,9 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 
 	d.BMC = bmcTf
 
-	//d.Image = types.StringValue(server.Image)
+	d.Image = types.StringValue(server.Image)
 
-	//var sshKeyIds, ipIds []string
-	var sshKeyIds []string
+	sshKeyIds := make([]string, 0, len(server.SSHKeys))
 	for _, sshKey := range server.SSHKeys {
 		sshKeyID := strconv.Itoa(sshKey.ID)
 		sshKeyIds = append(sshKeyIds, sshKeyID)
@@ -252,19 +252,29 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 				},
 			},
-			"image": schema.StringAttribute{
-				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).",
-				Optional:    true,
+			"image_slug": schema.StringAttribute{
+				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images)." +
+					"Use this to configure server OS.",
+				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"image": schema.StringAttribute{
+				Description: "Server operating system.",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
 				Description: "Set of the SSH key IDs allowed to SSH to the server.",
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.RequiresReplace(),
+					setplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
@@ -276,7 +286,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"user_data_file": schema.StringAttribute{
-				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script.",
+				Description: "Path to a userdata file for server initialization..",
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -314,7 +324,6 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"state": schema.StringAttribute{
@@ -328,8 +337,6 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Description: "IP addresses attached to the server.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
-					//IpAddressDependantOnExtraModifier(),
-					//TODO Use state for unknown if no extra addresses
 				},
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -410,7 +417,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		ProjectID:    int(data.ProjectId.ValueInt64()),
 		Plan:         data.Plan.ValueString(),
 		Region:       data.Region.ValueString(),
-		Image:        data.Image.ValueString(),
+		Image:        data.ImageSlug.ValueString(),
 		Hostname:     data.Hostname.ValueString(),
 		SpotInstance: data.SpotInstance.ValueBool(),
 	}
