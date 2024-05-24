@@ -413,14 +413,12 @@ func (r *ipResource) Delete(ctx context.Context, req resource.DeleteRequest, res
 		return
 	}
 
-	if data.TargetId.ValueString() != "0" {
-		if _, err := r.client.IPAddresses.Unassign(data.Id.ValueString()); err != nil {
-			resp.Diagnostics.AddError(
-				"unable to unassign a CherryServers ip resource from target, before deleting",
-				err.Error(),
-			)
-			return
-		}
+	if _, err := r.client.IPAddresses.Unassign(data.Id.ValueString()); err != nil {
+		resp.Diagnostics.AddError(
+			"unable to unassign a CherryServers ip resource from target, before deleting",
+			err.Error(),
+		)
+		return
 	}
 
 	IpID := data.Id.ValueString()

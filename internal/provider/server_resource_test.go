@@ -64,6 +64,41 @@ func TestAccServerResource_basic(t *testing.T) {
 	})
 }
 
+func TestAccServerResource_fullConfig(t *testing.T) {
+	projectName := "terraform_test_project_" + acctest.RandString(5)
+	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
+	label := "terraform_test_ssh_" + acctest.RandString(5)
+	publicKey, _, err := acctest.RandSSHKeyPair("cherryservers@ssh-acceptance-test")
+	if err != nil {
+		t.Fatalf("Cannot generate test SSH key pair: %s", err)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCherryServersServerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccServerResourceFullConfig(projectName, teamID, label, publicKey),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckCherryServersServerExists("cherryservers_server.test_server_server"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "bmc.password", ""),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "bmc.user", ""),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "id", regexp.MustCompile("[0-9]+")),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.0.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.1.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
+					resource.TestCheckResourceAttrSet("cherryservers_server.test_server_server", "name"),
+					resource.TestCheckResourceAttrSet("cherryservers_server.test_server_server", "password"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "power_state", "on"),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "project_id", regexp.MustCompile(`[0-9]+`)),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "spot_instance", "false"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "state", "active"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "username", "root"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCherryServersServerExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -152,4 +187,41 @@ resource "cherryservers_server" "%s" {
   }
 }
 `, projectName, teamID, serverResourceName, region, plan)
+}
+
+func testAccServerResourceFullConfig(projectName string, teamID string, sshKeyLabel string, sshKeyPublicKey string) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%s"
+}
+
+resource "cherryservers_ssh_key" "test_server_ssh_key" {
+  label = "%s"
+  public_key = "%s"
+}
+
+resource "cherryservers_ip" "test_server_ip" {
+  project_id = "${cherryservers_project.test_server_project.id}"
+  region = "eu_nord_1"
+}
+
+resource "cherryservers_server" "test_server_server" {
+  region = "eu_nord_1"
+  plan = "cloud_vps_1"
+  project_id = "${cherryservers_project.test_server_project.id}"
+  name = "test"
+  hostname = "server-fullconfig-test"
+  image_slug = "ubuntu_22_04"
+  ssh_key_ids = ["${cherryservers_ssh_key.test_server_ssh_key.id}"]
+  extra_ip_addresses_ids = ["${cherryservers_ip.test_server_ip.id}"]
+  tags = {
+    env = "test"
+  }
+  spot_instance = "false"
+  timeouts = {
+    create = "20m"
+  }
+}
+`, projectName, teamID, sshKeyLabel, sshKeyPublicKey)
 }

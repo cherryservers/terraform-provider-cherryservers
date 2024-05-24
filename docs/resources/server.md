@@ -50,19 +50,20 @@ resource "cherryservers_server" "server" {
 
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
 - `hostname` (String) Hostname of the server.
-- `image` (String) Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).
+- `image_slug` (String) Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).Use this to configure server OS.
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
 - `tags` (Map of String) Key/value metadata for server tagging.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
-- `user_data_file` (String) Base64 encoded User-Data blob. It should be either a bash or cloud-config script.
+- `user_data_file` (String) Path to a userdata file for server initialization..
 
 ### Read-Only
 
 - `bmc` (Attributes) Server BMC credentials. (see [below for nested schema](#nestedatt--bmc))
 - `id` (String) Server identifier.
+- `image` (String) Server operating system.
 - `ip_addresses` (Attributes Set) IP addresses attached to the server. (see [below for nested schema](#nestedatt--ip_addresses))
 - `password` (String, Sensitive) Server password credential.
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.
