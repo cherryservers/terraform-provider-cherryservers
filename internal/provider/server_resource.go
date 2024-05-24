@@ -99,13 +99,13 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	diags.Append(sshDiags...)
 
 	ips := make([]attr.Value, 0, len(server.IPAddresses))
-	ipIds := make([]string, 0, len(server.IPAddresses))
+	//ipIds := make([]string, 0, len(server.IPAddresses))
 	for _, ip := range server.IPAddresses {
 
 		// ExtraIPAddresses shouldn't have unmodifiable (primary and private type) IPs
-		if ip.Type == "subnet" || ip.Type == "floating-ip" {
+		/*if ip.Type == "subnet" || ip.Type == "floating-ip" {
 			ipIds = append(ipIds, ip.ID)
-		}
+		}*/
 
 		ipModel := ipAddressFlatResourceModel{
 			Id:            types.StringValue(ip.ID),
@@ -125,9 +125,9 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	diags.Append(ipsDiags...)
 	d.IpAddresses = ipsTf
 
-	ipIdsTf, ipIdDiags := types.SetValueFrom(ctx, types.StringType, ipIds)
+	/*ipIdsTf, ipIdDiags := types.SetValueFrom(ctx, types.StringType, ipIds)
 	d.ExtraIPAddressesIds = ipIdsTf
-	diags.Append(ipIdDiags...)
+	diags.Append(ipIdDiags...)*/
 
 	tags, tagsDiags := types.MapValueFrom(ctx, types.StringType, server.Tags)
 	d.Tags = tags
