@@ -128,6 +128,7 @@ func resourceCherryServersServerCreate(ctx context.Context, d *schema.ResourceDa
 		ProjectID: projectID,
 		Plan:      d.Get("plan").(string),
 		Region:    d.Get("region").(string),
+		Image:     d.Get("image").(string),
 	}
 
 	hostname, hostnameOk := d.GetOk("hostname")
