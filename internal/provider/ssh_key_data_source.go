@@ -37,7 +37,6 @@ type sshKeyDataSourceModel struct {
 	Created     types.String `tfsdk:"created"`
 	Updated     types.String `tfsdk:"updated"`
 	ID          types.String `tfsdk:"id"`
-	ProjectID   types.Int64  `tfsdk:"project_id"`
 }
 
 func (d *sshKeyDataSourceModel) populateModel(sshKey cherrygo.SSHKey) {
@@ -52,8 +51,6 @@ func (d *sshKeyDataSourceModel) populateModel(sshKey cherrygo.SSHKey) {
 func (d *sshKeyDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{
 		datasourcevalidator.ExactlyOneOf(path.MatchRoot("label"), path.MatchRoot("id")),
-		datasourcevalidator.ExactlyOneOf(path.MatchRoot("project_id"), path.MatchRoot("id")),
-		datasourcevalidator.RequiredTogether(path.MatchRoot("label"), path.MatchRoot("project_id")),
 	}
 }
 
@@ -93,10 +90,6 @@ func (d *sshKeyDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Computed:    true,
 				Description: "ID of the SSH Key.",
 			},
-			"project_id": schema.Int64Attribute{
-				Optional:    true,
-				Description: "ID of the project associated with the SSH Key.",
-			},
 		},
 	}
 }
@@ -133,8 +126,11 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	var sshKeyID int
 	//Get SSH key ID by label and project ID.
-	if state.ProjectID.ValueInt64() != 0 {
-		sshKeys, _, err := d.client.Projects.ListSSHKeys(int(state.ProjectID.ValueInt64()), nil)
+	if !state.Label.IsNull() {
+		getOptions := cherrygo.GetOptions{}
+		getOptions.Fields = []string{"ssh_key", "email"}
+
+		sshKeys, _, err := d.client.SSHKeys.List(&getOptions)
 		if err != nil {
 			resp.Diagnostics.AddError("couldn't read project SSHKeys", err.Error())
 			return
