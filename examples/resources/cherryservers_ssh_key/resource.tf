@@ -6,7 +6,7 @@ variable "ssh_key_path" {
   default     = "~/.ssh/cherry.pub"
 }
 
-resource "cherryservers_ssh" "my_ssh_key" {
+resource "cherryservers_ssh_key" "my_ssh_key" {
   label      = "mykey"
   public_key = file(var.ssh_key_path) # The public key contents can also be stored specific here directly
 }
