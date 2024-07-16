@@ -20,8 +20,7 @@ data "cherryservers_ssh_key" "my_ssh_key" {
 
 # Get SSH key info by label.
 data "cherryservers_ssh_key" "by_label" {
-  project_id = "123"
-  label      = "ssh-key-label"
+  label = "ssh-key-label"
 }
 ```
 
@@ -32,7 +31,6 @@ data "cherryservers_ssh_key" "by_label" {
 
 - `id` (String) ID of the SSH Key.
 - `label` (String) Label of the SSH key.
-- `project_id` (Number) ID of the project associated with the SSH Key.
 
 ### Read-Only
 
