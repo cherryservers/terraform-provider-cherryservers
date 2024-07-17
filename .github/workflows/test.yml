@@ -77,4 +77,4 @@ jobs:
           TF_ACC: "1"
           CHERRY_AUTH_KEY: ${{secrets.CHERRY_AUTH_KEY}}
           CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
-        run: go test -v -cover ./internal/provider/ -parallel=12 -timeout=60m
+        run: go test -v -cover ./internal/provider/ -parallel=3 -timeout=90m
