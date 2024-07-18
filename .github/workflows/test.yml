@@ -10,6 +10,9 @@ on:
   push:
     paths-ignore:
       - 'README.md'
+    branches:
+      - '*'
+      - '!dependabot/**'
 
 # Testing only needs permissions to read the repository contents.
 permissions:
