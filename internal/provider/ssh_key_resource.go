@@ -42,11 +42,15 @@ type sshKeyResourceModel struct {
 
 func (d *sshKeyResourceModel) populateModel(sshKey cherrygo.SSHKey) {
 	d.Label = types.StringValue(sshKey.Label)
-	d.PublicKey = types.StringValue(sshKey.Key)
+	//d.PublicKey = types.StringValue(sshKey.Key)
 	d.Fingerprint = types.StringValue(sshKey.Fingerprint)
 	d.Created = types.StringValue(sshKey.Created)
 	d.Updated = types.StringValue(sshKey.Updated)
 	d.ID = types.StringValue(strconv.Itoa(sshKey.ID))
+
+	if types.StringValue(strings.TrimSpace(d.PublicKey.ValueString())) != types.StringValue(sshKey.Key) {
+		d.PublicKey = types.StringValue(sshKey.Key)
+	}
 }
 
 func (r *sshKeyResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -196,7 +200,7 @@ func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	label := data.Label.ValueString()
-	publicKey := data.PublicKey.ValueString()
+	publicKey := strings.TrimSpace(data.PublicKey.ValueString())
 
 	request := cherrygo.UpdateSSHKey{
 		Label: &label,
