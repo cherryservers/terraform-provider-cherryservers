@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
+	"strings"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -118,7 +119,7 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	request := &cherrygo.CreateSSHKey{
 		Label: data.Label.ValueString(),
-		Key:   data.PublicKey.ValueString(),
+		Key:   strings.TrimSpace(data.PublicKey.ValueString()),
 	}
 
 	sshKey, _, err := r.client.SSHKeys.Create(request)
