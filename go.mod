@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/cherryservers/cherrygo/v3 v3.2.0
+	github.com/cherryservers/cherrygo/v3 v3.4.0
 	github.com/hashicorp/terraform-plugin-docs v0.19.2
 	github.com/hashicorp/terraform-plugin-framework v1.8.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.4.1
@@ -12,7 +12,6 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-testing v1.7.0
-	golang.org/x/exp v0.0.0-20230809150735-7b3493d9a819
 )
 
 require (
@@ -73,6 +72,7 @@ require (
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/exp v0.0.0-20230809150735-7b3493d9a819 // indirect
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
