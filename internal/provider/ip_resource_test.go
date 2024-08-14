@@ -172,35 +172,3 @@ func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFu
 		return nil
 	}
 }
-
-/*func testAccCheckCherryServersIPDestroy(s *terraform.State) error {
-	client := testCherryGoClient
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "cherryservers_ip" {
-			continue
-		}
-
-		// There is a delay with IP destruction
-		time.Sleep(5 * time.Second)
-
-		// Try to get the project
-		_, resp, err := client.IPAddresses.Get(rs.Primary.ID, nil)
-
-		if err != nil {
-			if is404Error(resp) {
-				continue
-			}
-			//API returns access denied instead of resource missing
-			if is403Error(resp) {
-				continue
-			}
-
-			return fmt.Errorf("IP listing error: %#v", err)
-		}
-
-		return fmt.Errorf("IP still exists" + " ID:" + rs.Primary.ID)
-	}
-
-	return nil
-}*/

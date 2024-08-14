@@ -99,14 +99,8 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	diags.Append(sshDiags...)
 
 	ips := make([]attr.Value, 0, len(server.IPAddresses))
-	//ipIds := make([]string, 0, len(server.IPAddresses))
+
 	for _, ip := range server.IPAddresses {
-
-		// ExtraIPAddresses shouldn't have unmodifiable (primary and private type) IPs
-		/*if ip.Type == "subnet" || ip.Type == "floating-ip" {
-			ipIds = append(ipIds, ip.ID)
-		}*/
-
 		ipModel := ipAddressFlatResourceModel{
 			Id:            types.StringValue(ip.ID),
 			Type:          types.StringValue(ip.Type),
@@ -124,10 +118,6 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ips)
 	diags.Append(ipsDiags...)
 	d.IpAddresses = ipsTf
-
-	/*ipIdsTf, ipIdDiags := types.SetValueFrom(ctx, types.StringType, ipIds)
-	d.ExtraIPAddressesIds = ipIdsTf
-	diags.Append(ipIdDiags...)*/
 
 	tags, tagsDiags := types.MapValueFrom(ctx, types.StringType, server.Tags)
 	d.Tags = tags
@@ -508,7 +498,6 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	//Workaround for not being able to set BGP and Name on "Request a server" request in API
-	// TODO: add BGP
 	updateRequest := cherrygo.UpdateServer{
 		Name: data.Name.ValueString(),
 	}
@@ -592,66 +581,6 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
-
-	/*requestReinstall := cherrygo.ReinstallServerFields{}
-	reinstallNeeded := false
-	if !plan.Image.Equal(state.Image) {
-		requestReinstall.Image = plan.Image.ValueString()
-		reinstallNeeded = true
-	}
-
-	if !plan.SSHKeyIds.Equal(state.SSHKeyIds) {
-		sshIds := make([]string, len(plan.SSHKeyIds.Elements()))
-		diags := plan.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
-		resp.Diagnostics.Append(diags...)
-
-		requestReinstall.SSHKeys = sshIds
-		reinstallNeeded = true
-	}
-
-	if !plan.OSPartitionSize.Equal(state.OSPartitionSize) {
-		requestReinstall.OSPartitionSize = int(plan.OSPartitionSize.ValueInt64())
-		reinstallNeeded = true
-	}
-
-	if !plan.UserData.Equal(state.UserData) {
-		if !IsBase64(plan.UserData.ValueString()) {
-			resp.Diagnostics.AddError("invalid UserData", "error reinstalling server, user_data property must be base64 encoded value")
-			return
-		}
-		reinstallNeeded = true
-	}
-
-	if reinstallNeeded {
-		_, _, err := r.client.Servers.Reinstall(serverID, &requestReinstall)
-		if err != nil {
-			resp.Diagnostics.AddError("unable to reinstall a CherryServers server resource", err.Error())
-		}
-		return
-	}*/
-
-	/*if !plan.ExtraIPAddressesIds.Equal(state.ExtraIPAddressesIds) {
-		for _, ip := range plan.ExtraIPAddressesIds.Elements() {
-			if !slices.Contains(state.ExtraIPAddressesIds.Elements(), ip) {
-				ipRequest := cherrygo.UpdateIPAddress{
-					TargetedTo: plan.Id.ValueString(),
-				}
-				ipTf, err := ip.ToTerraformValue(ctx)
-				if err != nil {
-					resp.Diagnostics.AddError("invalid IP value in plan", err.Error())
-					return
-				}
-				if ipTf.IsKnown() {
-					var ipStr string
-					_ = ipTf.As(&ipStr)
-					_, _, err = r.client.IPAddresses.Update(ipStr, &ipRequest)
-					if err != nil {
-						resp.Diagnostics.AddError("unable to update IP address in CherryServers server update operation", err.Error())
-					}
-				}
-			}
-		}
-	}*/
 
 	requestUpdate := cherrygo.UpdateServer{
 		Hostname: plan.Hostname.ValueString(),
