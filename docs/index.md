@@ -22,7 +22,7 @@ terraform {
 }
 
 # Set the variable value in variables.tf file
-# or set the CHERRY_AUTH_KEY environment variable
+# or set the CHERRY_AUTH_KEY or CHERRY_AUTH_TOKEN environment variables
 variable "cherry_api_key" {
   description = "Cherry servers API key"
   type        = string
@@ -31,7 +31,7 @@ variable "cherry_api_key" {
 
 # Configure the Cherry Servers Provider
 provider "cherryservers" {
-  api_key = var.cherry_api_key // API key can be found in Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
+  api_key = var.cherry_api_key // API key can be found in the Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
 }
 ```
 

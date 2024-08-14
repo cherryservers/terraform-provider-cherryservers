@@ -24,17 +24,24 @@ func testAccPreCheck(t *testing.T) {
 	// You can add code here to run prior to any test case execution, for example assertions
 	// about the appropriate environment variables being set are common to see in a pre-check
 	// function.
-	if v := os.Getenv("CHERRY_AUTH_KEY"); v == "" {
-		t.Fatal("CHERRY_AUTH_KEY must be set for acceptance tests")
+
+	apiKey := os.Getenv("CHERRY_AUTH_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("CHERRY_AUTH_TOKEN")
 	}
-	if v := os.Getenv("CHERRY_TEST_TEAM_ID"); v == "" {
+	if apiKey == "" {
+		t.Fatal("CHERRY_AUTH_KEY or CHERRY_AUTH_TOKEN must be set for acceptance tests")
+	}
+
+	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
+	if teamId == "" {
 		t.Fatal("CHERRY_TEST_TEAM_ID must be set for acceptance tests")
 	}
 
 	//TODO
 	//Make user agent version responsive.
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", "test", "1.0.0")
-	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(os.Getenv("CHERRY_AUTH_KEY")), cherrygo.WithUserAgent(userAgent)}
+	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		t.Fatal("error: couldn't create client a cherry servers client for testing:", err)
