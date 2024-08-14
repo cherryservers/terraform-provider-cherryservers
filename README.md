@@ -1,9 +1,10 @@
 # Cherry Servers Terraform Provider
 
+![GitHub Release](https://img.shields.io/github/v/release/caliban0/terraform-provider-cherryservers?include_prereleases)
+[![codecov](https://codecov.io/gh/caliban0/terraform-provider-cherryservers/graph/badge.svg?token=E0YQGYS8JH)](https://codecov.io/gh/caliban0/terraform-provider-cherryservers)
+
 - Cherry Servers Website: https://www.cherryservers.com
 - Terraform Website: https://www.terraform.io
-
-<img src="https://raw.githubusercontent.com/hashicorp/terraform-website/master/public/img/logo-hashicorp.svg" width="600px">
 
 ## Requirements
 
@@ -19,20 +20,6 @@
 ```shell
 go install
 ```
-
-## Adding Dependencies
-
-This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).
-Please see the Go documentation for the most up to date information about using Go modules.
-
-To add a new dependency `github.com/author/dependency` to your Terraform provider:
-
-```shell
-go get github.com/author/dependency
-go mod tidy
-```
-
-Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
 
