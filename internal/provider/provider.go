@@ -68,7 +68,8 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 			path.Root("api_key"),
 			"Unknown CherryServers API Key",
 			"The provider cannot create the CherryServers API client as there is an unknown configuration value for the CherryServers API Key. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the CHERRY_AUTH_TOKEN environment variable.",
+				"Either target apply the source of the value first, set the value statically in the configuration,"+
+				" or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables.",
 		)
 	}
 
@@ -77,6 +78,9 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 	}
 
 	apiKey := os.Getenv("CHERRY_AUTH_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("CHERRY_AUTH_TOKEN")
+	}
 
 	if !data.APIKey.IsNull() {
 		apiKey = data.APIKey.ValueString()
@@ -87,7 +91,7 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 			path.Root("api_key"),
 			"Missing CherryServers API Key",
 			"The provider cannot create the CherryServers API client as there is a missing or empty value for the CherryServers API key. "+
-				"Set the username value in the configuration or use the CHERRY_AUTH_TOKEN environment variable. "+
+				"Set the API key value in the configuration or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
