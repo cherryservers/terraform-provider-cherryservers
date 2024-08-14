@@ -12,7 +12,7 @@ import (
 
 func TestAccIPResource_basic(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
-	projectName := "terraform_test_project_" + acctest.RandString(5)
+	projectName := testProjectNamePrefix + acctest.RandString(5)
 	aRecord := acctest.RandString(5)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -149,7 +149,7 @@ resource "cherryservers_ip" "test_ip_ip" {
   }
 ddos_scrubbing = "true"
 }
-`, "terraform_test_project_"+acctest.RandString(5), teamId)
+`, testProjectNamePrefix+acctest.RandString(5), teamId)
 }
 
 func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFunc {

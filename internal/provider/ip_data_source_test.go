@@ -11,7 +11,7 @@ import (
 
 func TestAccIpDataSource_basic(t *testing.T) {
 	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
-	projectName := "terraform_test_project_" + acctest.RandString(5)
+	projectName := testProjectNamePrefix + acctest.RandString(5)
 	resourceName := "cherryservers_ip.test_ip_ip"
 	dataSourceName := "data.cherryservers_ip.test_ip_ip"
 	resource.ParallelTest(t, resource.TestCase{
