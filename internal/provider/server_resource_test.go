@@ -14,7 +14,7 @@ import (
 
 func TestAccServerResource_basic(t *testing.T) {
 	serverResourceName := "terraform_test_server_" + acctest.RandString(5)
-	projectName := "terraform_test_project_" + acctest.RandString(5)
+	projectName := testProjectNamePrefix + acctest.RandString(5)
 	testPlan := "cloud_vps_1"
 	testRegion := "eu_nord_1"
 	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
@@ -65,7 +65,7 @@ func TestAccServerResource_basic(t *testing.T) {
 }
 
 func TestAccServerResource_fullConfig(t *testing.T) {
-	projectName := "terraform_test_project_" + acctest.RandString(5)
+	projectName := testProjectNamePrefix + acctest.RandString(5)
 	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
 	label := "terraform_test_ssh_" + acctest.RandString(5)
 	publicKey, _, err := acctest.RandSSHKeyPair("cherryservers@ssh-acceptance-test")
