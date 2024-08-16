@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
 	"testing"
 
@@ -23,11 +24,16 @@ func testAccPreCheck(t *testing.T) {
 	// about the appropriate environment variables being set are common to see in a pre-check
 	// function.
 
-	client, err := sharedClientForRegion("")
+	client, err := sharedClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	testCherryGoClient = client.(*cherrygo.Client)
+	var ok bool
+	testCherryGoClient, ok = client.(*cherrygo.Client)
+	if !ok {
+		errStr := fmt.Sprintf("expected cherrygo.Client, got %T", client)
+		t.Fatal(errStr)
+	}
 
 }

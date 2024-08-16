@@ -17,8 +17,8 @@ func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
 
-// sharedClientForRegion returns a common provider client configured for the specified region
-func sharedClientForRegion(region string) (any, error) {
+// sharedClient returns a common provider client.
+func sharedClient() (any, error) {
 	apiKey := os.Getenv("CHERRY_AUTH_KEY")
 	if apiKey == "" {
 		apiKey = os.Getenv("CHERRY_AUTH_TOKEN")
@@ -50,12 +50,15 @@ func init() {
 	resource.AddTestSweepers("cherryservers_projects", &resource.Sweeper{
 		Name: "cherryservers_projects",
 		F: func(region string) error {
-			client, err := sharedClientForRegion(region)
+			client, err := sharedClient()
 			if err != nil {
 				return fmt.Errorf("error getting client: %s", err)
 			}
 
-			conn := client.(*cherrygo.Client)
+			conn, ok := client.(*cherrygo.Client)
+			if !ok {
+				return fmt.Errorf("expected cherrygo.Client, got %T", client)
+			}
 			teamId, err := strconv.Atoi(os.Getenv("CHERRY_TEST_TEAM_ID"))
 			if err != nil {
 				return fmt.Errorf("error parsing team id: %s", err)
