@@ -83,7 +83,7 @@ jobs:
           TF_ACC: "1"
           CHERRY_AUTH_KEY: ${{secrets.CHERRY_AUTH_KEY}}
           CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
-        run: go test -v -cover ./internal/provider/ -parallel=1 -timeout=90m
+        run: go test -v ./internal/provider/ -coverprofile=coverage.txt -parallel=1 -timeout=90m
 
       - uses: codecov/codecov-action@v4
         with:
