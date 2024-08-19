@@ -51,7 +51,6 @@ data "cherryservers_server" "by_hostname" {
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
 - `state` (String) The state of the server, such as 'pending' or 'active'.
 - `tags` (Map of String) Key/value metadata for server tagging.
-- `user_data_file` (String) Base64 encoded User-Data blob. It should be either a bash or cloud-config script.
 - `username` (String) Server username credential.
 
 <a id="nestedatt--timeouts"></a>

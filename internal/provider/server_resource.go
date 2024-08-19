@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cherryservers/cherrygo/v3"
@@ -23,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"os"
 	"strconv"
 	"time"
 )
@@ -58,7 +56,7 @@ type serverResourceModel struct {
 	ImageSlug           types.String   `tfsdk:"image_slug"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
-	UserDataFile        types.String   `tfsdk:"user_data_file"`
+	UserData            types.String   `tfsdk:"user_data"`
 	Tags                types.Map      `tfsdk:"tags"`
 	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
 	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
@@ -276,8 +274,8 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					setplanmodifier.RequiresReplace(),
 				},
 			},
-			"user_data_file": schema.StringAttribute{
-				Description: "Path to a userdata file for server initialization..",
+			"user_data": schema.StringAttribute{
+				Description: "Base64 encoded user-data blob. It should be a bash or cloud-config script.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -436,14 +434,13 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	request.Tags = &tagsMap
 
-	if !data.UserDataFile.IsNull() {
-		userdataRaw, err := os.ReadFile(data.UserDataFile.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("unable to read user data file", err.Error())
-			return
+	if !data.UserData.IsNull() {
+		userData := data.UserData.ValueString()
+		if err := IsBase64(userData); err == nil {
+			request.UserData = userData
+		} else {
+			resp.Diagnostics.AddError("unable to read user data", err.Error())
 		}
-		userData := base64.StdEncoding.EncodeToString(userdataRaw)
-		request.UserData = userData
 	}
 
 	if !data.OSPartitionSize.IsNull() {

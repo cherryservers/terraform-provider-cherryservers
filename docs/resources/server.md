@@ -57,7 +57,7 @@ resource "cherryservers_server" "server" {
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
 - `tags` (Map of String) Key/value metadata for server tagging.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
-- `user_data_file` (String) Path to a userdata file for server initialization..
+- `user_data` (String) Base64 encoded user-data blob. It should be a bash or cloud-config script.
 
 ### Read-Only
 
