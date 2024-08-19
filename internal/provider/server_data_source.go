@@ -43,7 +43,6 @@ type serverDataSourceModel struct {
 	Image               types.String   `tfsdk:"image"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
-	UserDataFile        types.String   `tfsdk:"user_data_file"`
 	Tags                types.Map      `tfsdk:"tags"`
 	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
 	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
@@ -69,7 +68,6 @@ func (d *serverDataSourceModel) populateModel(server cherrygo.Server, ctx contex
 	d.Image = resourceModel.Image
 	d.SSHKeyIds = resourceModel.SSHKeyIds
 	//d.ExtraIPAddressesIds = resourceModel.ExtraIPAddressesIds
-	d.UserDataFile = resourceModel.UserDataFile
 	d.Tags = resourceModel.Tags
 	d.SpotInstance = resourceModel.SpotInstance
 	d.OSPartitionSize = resourceModel.OSPartitionSize
@@ -154,10 +152,6 @@ func (d *serverDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Description: "Set of the IP address IDs to be embedded into the Server.",
 				Computed:    true,
 				ElementType: types.StringType,
-			},
-			"user_data_file": schema.StringAttribute{
-				Description: "Base64 encoded User-Data blob. It should be either a bash or cloud-config script.",
-				Computed:    true,
 			},
 			"tags": schema.MapAttribute{
 				Description: "Key/value metadata for server tagging.",
