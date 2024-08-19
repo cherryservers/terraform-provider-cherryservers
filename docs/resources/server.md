@@ -26,7 +26,7 @@ resource "cherryservers_server" "server" {
   hostname               = "sharing-wallaby"
   project_id             = 123456
   region                 = "eu_nord_1"
-  image_slug             = "ubuntu_22_04"
+  image                  = "ubuntu_22_04"
   ssh_key_ids            = ["1", "2"]
   extra_ip_addresses_ids = ["8269de5d-9b89-af9a-8bcc-8efb4d9fa282"]
   spot_instance          = true
@@ -50,7 +50,7 @@ resource "cherryservers_server" "server" {
 
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
 - `hostname` (String) Hostname of the server.
-- `image_slug` (String) Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).Use this to configure server OS.
+- `image` (String) Slug of the server operating system.
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
@@ -63,7 +63,6 @@ resource "cherryservers_server" "server" {
 
 - `bmc` (Attributes) Server BMC credentials. (see [below for nested schema](#nestedatt--bmc))
 - `id` (String) Server identifier.
-- `image` (String) Server operating system.
 - `ip_addresses` (Attributes Set) IP addresses attached to the server. (see [below for nested schema](#nestedatt--ip_addresses))
 - `password` (String, Sensitive) Server password credential.
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.

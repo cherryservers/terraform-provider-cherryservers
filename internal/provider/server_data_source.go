@@ -271,6 +271,10 @@ func (d *serverDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	if err = NormalizeServerImage(&server, d.client); err != nil {
+		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
+	}
+
 	data.populateModel(server, ctx, resp.Diagnostics, powerState.Power)
 
 	tflog.Trace(ctx, "read a data source")
