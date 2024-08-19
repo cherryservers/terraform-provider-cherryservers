@@ -83,6 +83,7 @@ func TestAccServerResource_fullConfig(t *testing.T) {
 					testAccCheckCherryServersServerExists("cherryservers_server.test_server_server"),
 					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "bmc.password", ""),
 					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "bmc.user", ""),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "image", "ubuntu_22_04"),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "id", regexp.MustCompile("[0-9]+")),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.0.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.1.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
@@ -212,7 +213,7 @@ resource "cherryservers_server" "test_server_server" {
   project_id = "${cherryservers_project.test_server_project.id}"
   name = "test"
   hostname = "server-fullconfig-test"
-  image_slug = "ubuntu_22_04"
+  image = "ubuntu_22_04"
   ssh_key_ids = ["${cherryservers_ssh_key.test_server_ssh_key.id}"]
   extra_ip_addresses_ids = ["${cherryservers_ip.test_server_ip.id}"]
   tags = {

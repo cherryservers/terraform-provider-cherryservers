@@ -2,6 +2,7 @@ package provider
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
 	"strings"
@@ -35,4 +36,20 @@ func serverList(projectID int, ServerService cherrygo.ServersService) ([]cherryg
 func IsBase64(s string) error {
 	_, err := base64.StdEncoding.DecodeString(s)
 	return err
+}
+
+func NormalizeServerImage(server *cherrygo.Server, client *cherrygo.Client) error {
+	images, _, err := client.Images.List(server.Plan.Slug, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, image := range images {
+		if image.Name == server.Image {
+			server.Image = image.Slug
+			return nil
+		}
+	}
+
+	return errors.New("could not find image slug for image with name `" + server.Image + "`")
 }

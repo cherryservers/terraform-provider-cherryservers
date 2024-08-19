@@ -53,7 +53,6 @@ type serverResourceModel struct {
 	Password            types.String   `tfsdk:"password"`
 	BMC                 types.Object   `tfsdk:"bmc"`
 	Image               types.String   `tfsdk:"image"`
-	ImageSlug           types.String   `tfsdk:"image_slug"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
 	UserData            types.String   `tfsdk:"user_data"`
@@ -241,19 +240,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 				},
 			},
-			"image_slug": schema.StringAttribute{
-				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images)." +
-					"Use this to configure server OS.",
-				Optional: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
 			"image": schema.StringAttribute{
-				Description: "Server operating system.",
+				Description: "Slug of the server operating system.",
+				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
@@ -406,7 +399,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		ProjectID:    int(data.ProjectId.ValueInt64()),
 		Plan:         data.Plan.ValueString(),
 		Region:       data.Region.ValueString(),
-		Image:        data.ImageSlug.ValueString(),
+		Image:        data.Image.ValueString(),
 		Hostname:     data.Hostname.ValueString(),
 		SpotInstance: data.SpotInstance.ValueBool(),
 	}
@@ -440,6 +433,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 			request.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
+			return
 		}
 	}
 
@@ -511,6 +505,10 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	if err = NormalizeServerImage(&server, r.client); err != nil {
+		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
+	}
+
 	data.populateModel(server, ctx, resp.Diagnostics, powerState.Power)
 
 	// Write logs using the tflog package
@@ -558,6 +556,10 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
+	}
+
+	if err = NormalizeServerImage(&server, r.client); err != nil {
+		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
 	data.populateModel(server, ctx, resp.Diagnostics, powerState.Power)
@@ -612,6 +614,10 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
+	}
+
+	if err = NormalizeServerImage(&server, r.client); err != nil {
+		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
 	plan.populateModel(server, ctx, resp.Diagnostics, powerState.Power)
