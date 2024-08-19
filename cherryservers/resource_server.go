@@ -164,11 +164,11 @@ func resourceCherryServersServerCreate(ctx context.Context, d *schema.ResourceDa
 	userData, userDataExist := d.GetOk("user_data")
 	if userDataExist {
 		uData := userData.(string)
-		err := IsBase64(uData)
-		if err {
+		if IsBase64(uData) {
+			request.UserData = uData
+		} else {
 			return diag.Errorf("error creating server, user_data property must be base64 encoded value")
 		}
-		request.UserData = uData
 	}
 
 	osPartitionSize, partitionExist := d.GetOk("os_partition_size")
