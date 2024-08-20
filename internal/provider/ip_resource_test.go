@@ -13,7 +13,7 @@ import (
 func TestAccIPResource_basic(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	projectName := testProjectNamePrefix + acctest.RandString(5)
-	aRecord := "test"
+	aRecord := "test_tf_basic_update"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -69,7 +69,7 @@ func TestAccIPResource_fullConfig(t *testing.T) {
 				Config: testAccIPResourceFullConfig(teamId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_actual", "test.cloud.cherryservers.net."),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_actual", "test_tf_full.cloud.cherryservers.net."),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_actual", "test."),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "route_ip_id"),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "target_id", regexp.MustCompile(`[0-9]+`)),
@@ -142,7 +142,7 @@ resource "cherryservers_ip" "test_ip_ip" {
   project_id = "${cherryservers_project.test_ip_project.id}"
   region = "eu_nord_1"
   target_hostname = "${cherryservers_server.test_ip_server.hostname}"
-  a_record = "test"
+  a_record = "test_tf_full"
   ptr_record = "test"
   tags = {
     env = "test"
