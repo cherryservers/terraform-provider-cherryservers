@@ -13,7 +13,7 @@ import (
 func TestAccIPResource_basic(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	projectName := testProjectNamePrefix + acctest.RandString(5)
-	aRecord := "test_tf_basic_update"
+	aRecord := "testtfupdate"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
