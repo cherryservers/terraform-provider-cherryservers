@@ -30,7 +30,7 @@ type CherryServersProvider struct {
 
 // CherryServersProviderModel describes the provider data model.
 type CherryServersProviderModel struct {
-	APIKey types.String `tfsdk:"api_key"`
+	APIToken types.String `tfsdk:"api_token"`
 }
 
 func (p *CherryServersProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -41,7 +41,7 @@ func (p *CherryServersProvider) Metadata(ctx context.Context, req provider.Metad
 func (p *CherryServersProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"api_key": schema.StringAttribute{
+			"api_token": schema.StringAttribute{
 				Description: "Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API.",
 				Optional:    true,
 				Sensitive:   true,
@@ -63,11 +63,11 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 
 	// Configuration values are now available.
 	// if data.Endpoint.IsNull() { /* ... */ }
-	if data.APIKey.IsUnknown() {
+	if data.APIToken.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("api_key"),
-			"Unknown CherryServers API Key",
-			"The provider cannot create the CherryServers API client as there is an unknown configuration value for the CherryServers API Key. "+
+			path.Root("api_token"),
+			"Unknown CherryServers API Token",
+			"The provider cannot create the CherryServers API client as there is an unknown configuration value for the CherryServers API Token. "+
 				"Either target apply the source of the value first, set the value statically in the configuration,"+
 				" or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables.",
 		)
@@ -77,21 +77,21 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	apiKey := os.Getenv("CHERRY_AUTH_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("CHERRY_AUTH_TOKEN")
+	apiToken := os.Getenv("CHERRY_AUTH_KEY")
+	if apiToken == "" {
+		apiToken = os.Getenv("CHERRY_AUTH_TOKEN")
 	}
 
-	if !data.APIKey.IsNull() {
-		apiKey = data.APIKey.ValueString()
+	if !data.APIToken.IsNull() {
+		apiToken = data.APIToken.ValueString()
 	}
 
-	if apiKey == "" {
+	if apiToken == "" {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("api_key"),
-			"Missing CherryServers API Key",
-			"The provider cannot create the CherryServers API client as there is a missing or empty value for the CherryServers API key. "+
-				"Set the API key value in the configuration or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables. "+
+			path.Root("api_token"),
+			"Missing CherryServers API Token",
+			"The provider cannot create the CherryServers API client as there is a missing or empty value for the CherryServers API token. "+
+				"Set the API token value in the configuration or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
@@ -100,14 +100,14 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	ctx = tflog.SetField(ctx, "cherryservers_api_key", apiKey)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "cherryservers_api_key")
+	ctx = tflog.SetField(ctx, "cherryservers_api_token", apiToken)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "cherryservers_api_token")
 
 	tflog.Debug(ctx, "Creating CherryServers client")
 
 	// Example client configuration for data sources and resources
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", p.version, req.TerraformVersion)
-	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
+	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiToken), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		resp.Diagnostics.AddError(
