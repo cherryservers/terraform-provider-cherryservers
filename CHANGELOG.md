@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Completed migration from SDKv2 to Framework.
+- At least Terraform 1.8 and Go 1.21 now required.
 - In all data sources, the identifying attribute is now called `id`, instead of `{resource-name}_id` or something
   similar.
 - IP resource and data source attribute `target_ip_id` is now called `route_ip_id`.
