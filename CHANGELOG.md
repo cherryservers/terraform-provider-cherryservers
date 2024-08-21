@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Completed migration from SDKv2 to Framework.
 - In all data sources, the identifying attribute is now called `id`, instead of `{resource-name}_id` or something
   similar.
 - IP resource and data source attribute `target_ip_id` is now called `route_ip_id`.
@@ -17,4 +18,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSH key resource and data source attribute `name` is now called `label`.
 - Server resource attribute `ip_addresses_ids` is now called `extra_ip_addresses_ids`.
 
-[unreleased]: https://github.com/cherryservers/terraform-provider-cherryserver/compare/v0.0.6...HEAD
+[unreleased]: https://github.com/cherryservers/terraform-provider-cherryservers/compare/v0.0.6...0.1.0
