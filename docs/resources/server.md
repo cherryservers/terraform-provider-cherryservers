@@ -48,16 +48,17 @@ resource "cherryservers_server" "server" {
 
 ### Optional
 
+- `allow_reinstall` (Boolean) Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. WARNING: The reinstall will be triggered even if Terraform reports an in-place update.
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
 - `hostname` (String) Hostname of the server.
-- `image` (String) Slug of the server operating system.
+- `image` (String) Slug of the server operating system. Updating this attribute requires a server re-install.
 - `name` (String) Name of the server.
-- `os_partition_size` (Number) OS partition size in GB.
+- `os_partition_size` (Number) OS partition size in GB. Updating this attribute requires a server re-install.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
-- `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
+- `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server. Updating this attribute requires a server re-install.
 - `tags` (Map of String) Key/value metadata for server tagging.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
-- `user_data` (String) Base64 encoded user-data blob. It should be a bash or cloud-config script.
+- `user_data` (String) Base64 encoded user-data blob. It should be a bash or cloud-config script. Updating this attribute requires a server re-install.
 
 ### Read-Only
 

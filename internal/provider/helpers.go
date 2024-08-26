@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
+	"math/rand"
 	"strings"
 )
 
@@ -52,4 +53,23 @@ func NormalizeServerImage(server *cherrygo.Server, client *cherrygo.Client) erro
 	}
 
 	return errors.New("could not find image slug for image with name `" + server.Image + "`")
+}
+
+func generatePassword() string {
+	const (
+		lowercaseLetters = "abcdefghijklmnopqrstuvwxyz"
+		uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		digits           = "0123456789"
+		all              = lowercaseLetters + uppercaseLetters + digits
+	)
+
+	password := make([]byte, 16)
+	password[0] = lowercaseLetters[rand.Intn(len(lowercaseLetters))]
+	password[1] = uppercaseLetters[rand.Intn(len(uppercaseLetters))]
+	password[2] = digits[rand.Intn(len(digits))]
+	for i := 3; i < 16; i++ {
+		password[i] = all[rand.Intn(len(all))]
+	}
+
+	return string(password)
 }

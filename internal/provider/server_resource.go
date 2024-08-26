@@ -64,6 +64,7 @@ type serverResourceModel struct {
 	IpAddresses         types.Set      `tfsdk:"ip_addresses"`
 	Id                  types.String   `tfsdk:"id"`
 	Timeouts            timeouts.Value `tfsdk:"timeouts"`
+	AllowReinstall      types.Bool     `tfsdk:"allow_reinstall"`
 }
 
 func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -241,21 +242,27 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"image": schema.StringAttribute{
-				Description: "Slug of the server operating system.",
-				Optional:    true,
-				Computed:    true,
+				Description: "Slug of the server operating system. " +
+					"Updating this attribute requires a server re-install.",
+				Optional: true,
+				Computed: true,
 				PlanModifiers: []planmodifier.String{
+					WarnIfChangedString("Server re-install required.",
+						"You are updating attributes that will trigger a server re-install."+
+							" This will wipe all your data and may take awhile."),
 					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
-				Description: "Set of the SSH key IDs allowed to SSH to the server.",
+				Description: "Set of the SSH key IDs allowed to SSH to the server. " +
+					"Updating this attribute requires a server re-install.",
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
+					WarnIfChangedSet("Server re-install required.",
+						"You are updating attributes that will trigger a server re-install."+
+							" This will wipe all your data and may take awhile."),
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -268,10 +275,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"user_data": schema.StringAttribute{
-				Description: "Base64 encoded user-data blob. It should be a bash or cloud-config script.",
-				Optional:    true,
+				Description: "Base64 encoded user-data blob. It should be a bash or cloud-config script. " +
+					"Updating this attribute requires a server re-install.",
+				Optional: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					WarnIfChangedString("Server re-install required.",
+						"You are updating attributes that will trigger a server re-install."+
+							" This will wipe all your data and may take awhile."),
 				},
 			},
 			"tags": schema.MapAttribute{
@@ -295,10 +305,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"os_partition_size": schema.Int64Attribute{
-				Description: "OS partition size in GB.",
-				Optional:    true,
+				Description: "OS partition size in GB. " +
+					"Updating this attribute requires a server re-install.",
+				Optional: true,
 				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+					WarnIfChangedInt64("Server re-install required.",
+						"You are updating attributes that will trigger a server re-install."+
+							" This will wipe all your data and may take awhile."),
 				},
 			},
 			"power_state": schema.StringAttribute{
@@ -367,6 +380,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"allow_reinstall": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. " +
+					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update.",
+				Default: booldefault.StaticBool(false),
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -580,6 +600,82 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
+
+	if !plan.Image.Equal(state.Image) ||
+		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
+		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
+		!plan.UserData.Equal(state.UserData) {
+		if !plan.AllowReinstall.ValueBool() {
+			resp.Diagnostics.AddError("allow_reinstall attribute not set",
+				"updating image, ssh_key_ids, os_partition_size or user_data, requires setting allow_reinstall to true")
+			return
+		}
+
+		password := generatePassword()
+
+		sshIds := make([]string, 0, len(plan.SSHKeyIds.Elements()))
+		diags := plan.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
+		resp.Diagnostics.Append(diags...)
+
+		requestReinstall := &cherrygo.ReinstallServerFields{
+			Image:           plan.Image.ValueString(),
+			Hostname:        plan.Hostname.ValueString(),
+			Password:        password,
+			SSHKeys:         sshIds,
+			OSPartitionSize: int(plan.OSPartitionSize.ValueInt64()),
+		}
+
+		if !plan.UserData.IsNull() {
+			userData := plan.UserData.ValueString()
+			if err := IsBase64(userData); err == nil {
+				requestReinstall.UserData = userData
+			} else {
+				resp.Diagnostics.AddError("unable to read user data", err.Error())
+				return
+			}
+		}
+
+		server, _, err := r.client.Servers.Reinstall(serverID, requestReinstall)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"unable to create a CherryServers server resource",
+				err.Error(),
+			)
+			return
+		}
+
+		updateTimeout, diags := plan.Timeouts.Update(ctx, 60*time.Minute)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		err = backoff.Retry(
+			func() error {
+				statusOption := cherrygo.GetOptions{Fields: []string{"status"}}
+				s, _, e := r.client.Servers.Get(server.ID, &statusOption)
+				if e != nil {
+					return backoff.Permanent(e)
+				}
+
+				if s.Status == "deploying" {
+					return errors.New("server is in inactive state")
+				}
+
+				if s.Status == "deployed" {
+					return nil
+				}
+
+				return backoff.Permanent(errors.New("server is in unknown status"))
+
+			}, backoff.NewExponentialBackOff(
+				backoff.WithMaxElapsedTime(updateTimeout),
+				backoff.WithInitialInterval(time.Second*10)))
+		if err != nil {
+			resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
+			return
+		}
+	}
 
 	requestUpdate := cherrygo.UpdateServer{
 		Hostname: plan.Hostname.ValueString(),
