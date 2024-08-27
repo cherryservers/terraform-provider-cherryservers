@@ -43,6 +43,11 @@ func (d useStateIfNoConfigurationChangesModifier) PlanModifyString(ctx context.C
 		return
 	}
 
+	// Ignore cases where the attribute is already unknown in the configuration.
+	if req.ConfigValue.IsUnknown() {
+		return
+	}
+
 	expressions := req.PathExpression.MergeExpressions(d.expressions...)
 
 	for _, expression := range expressions {
