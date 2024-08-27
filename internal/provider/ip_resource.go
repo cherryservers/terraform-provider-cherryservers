@@ -124,10 +124,10 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 					}...),
 				},
 				PlanModifiers: []planmodifier.String{
-					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
-						"target_hostname",
-						"route_ip_id",
-					}),
+					UseStateIfNoConfigurationChanges(path.Expressions{
+						path.MatchRoot("target_hostname"),
+						path.MatchRoot("route_ip_id"),
+					}...),
 				},
 			},
 			"target_hostname": schema.StringAttribute{
@@ -141,10 +141,10 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 					}...),
 				},
 				PlanModifiers: []planmodifier.String{
-					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
-						"target_id",
-						"route_ip_id",
-					}),
+					UseStateIfNoConfigurationChanges(path.Expressions{
+						path.MatchRoot("target_id"),
+						path.MatchRoot("route_ip_id"),
+					}...),
 				},
 			},
 			"route_ip_id": schema.StringAttribute{
@@ -153,10 +153,10 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
-						"target_hostname",
-						"target_id",
-					}),
+					UseStateIfNoConfigurationChanges(path.Expressions{
+						path.MatchRoot("target_hostname"),
+						path.MatchRoot("target_id"),
+					}...),
 				},
 			},
 			"ddos_scrubbing": schema.BoolAttribute{
@@ -177,9 +177,9 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 					"API return value.",
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
-						"a_record",
-					}),
+					UseStateIfNoConfigurationChanges(path.Expressions{
+						path.MatchRoot("a_record"),
+					}...),
 				},
 			},
 			"ptr_record": schema.StringAttribute{
@@ -190,9 +190,9 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Description: "Reverse DNS name for the IP address. API return value.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
-					UseStateIfNoConfigurationChangesAttributePlanModifier([]string{
-						"ptr_record",
-					}),
+					UseStateIfNoConfigurationChanges(path.Expressions{
+						path.MatchRoot("ptr_record"),
+					}...),
 				},
 			},
 			"address": schema.StringAttribute{

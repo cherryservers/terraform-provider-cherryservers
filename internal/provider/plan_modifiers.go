@@ -2,62 +2,81 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ planmodifier.String = useStateIfNoConfigurationChangesAttributePlanModifier{}
+var _ planmodifier.String = useStateIfNoConfigurationChangesModifier{}
 
-// UseStateIfNoConfigurationChangesAttributePlanModifier matches a computed attribute to its state if there are no
-// configuration changes in `attributePaths`. `attributePaths` should consist of required, optional or optional&computed attributes.
-func UseStateIfNoConfigurationChangesAttributePlanModifier(attributePaths []string) planmodifier.String {
-	return &useStateIfNoConfigurationChangesAttributePlanModifier{
-		attributePaths: attributePaths,
+// UseStateIfNoConfigurationChanges assigns a computed attribute its previous state if there are no
+// user configuration changes in `attributePaths`. Known limitation:
+// ignores null attribute configurations. For example, if an attribute configuration has changed from
+// a previously known value to null, it will be treated as unchanged. This is because there is no
+// way to differentiate between attributes that are intentionally null and those that are not configured.
+func UseStateIfNoConfigurationChanges(expressions ...path.Expression) planmodifier.String {
+	return &useStateIfNoConfigurationChangesModifier{
+		expressions: expressions,
 	}
 }
 
-type useStateIfNoConfigurationChangesAttributePlanModifier struct {
-	attributePaths []string
+type useStateIfNoConfigurationChangesModifier struct {
+	expressions path.Expressions
 }
 
-func (d useStateIfNoConfigurationChangesAttributePlanModifier) Description(ctx context.Context) string {
-	return "Matches attribute plan to state if the practitioner has not updated the configuration."
+func (d useStateIfNoConfigurationChangesModifier) Description(ctx context.Context) string {
+	return "Assigns its previous state to an attribute, if the practitioner has not updated the configuration."
 }
 
-func (d useStateIfNoConfigurationChangesAttributePlanModifier) MarkdownDescription(ctx context.Context) string {
+func (d useStateIfNoConfigurationChangesModifier) MarkdownDescription(ctx context.Context) string {
 	return d.Description(ctx)
 }
 
-func (d useStateIfNoConfigurationChangesAttributePlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	//Ignore create or destroy cases.
+func (d useStateIfNoConfigurationChangesModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	// Ignore create or destroy cases.
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
 
-	//Ignore cases where the attribute has been configured.
-	if !req.ConfigValue.IsNull() {
+	// Ignore cases where the attribute has a known planned value.
+	if !req.PlanValue.IsUnknown() {
 		return
 	}
 
-	for _, attributePath := range d.attributePaths {
-		var attributeConfig types.String
-		diags := req.Config.GetAttribute(ctx, path.Root(attributePath), &attributeConfig)
+	expressions := req.PathExpression.MergeExpressions(d.expressions...)
+
+	for _, expression := range expressions {
+		// Find paths matching the expression in the configuration data.
+		matchedPaths, diags := req.Config.PathMatches(ctx, expression)
+
 		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
+
+		// Collect all errors
+		if diags.HasError() {
+			continue
 		}
 
-		var attributeState types.String
-		diags = req.State.GetAttribute(ctx, path.Root(attributePath), &attributeState)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+		for _, matchedPath := range matchedPaths {
+			// Fetch the generic attr.Value at the given path. This ensures any
+			// potential parent value of a different type, which can be a null
+			// or unknown value, can be safely checked without raising a type
+			// conversion error.
+			var matchedPathConfigValue attr.Value
+			var matchedPathStateValue attr.Value
 
-		if !attributeConfig.IsNull() && !attributeState.Equal(attributeConfig) {
-			resp.PlanValue = types.StringUnknown()
-			return
+			diags = req.Config.GetAttribute(ctx, matchedPath, &matchedPathConfigValue)
+			resp.Diagnostics.Append(diags...)
+			diags = req.State.GetAttribute(ctx, matchedPath, &matchedPathStateValue)
+			resp.Diagnostics.Append(diags...)
+
+			// Collect all errors
+			if diags.HasError() {
+				continue
+			}
+
+			if !matchedPathConfigValue.IsNull() && !matchedPathStateValue.Equal(matchedPathConfigValue) {
+				return
+			}
 		}
 
 	}
