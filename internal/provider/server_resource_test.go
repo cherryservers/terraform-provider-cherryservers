@@ -96,6 +96,22 @@ func TestAccServerResource_fullConfig(t *testing.T) {
 					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "username", "root"),
 				),
 			},
+			// Reinstall testing
+			{
+				Config: testAccServerResourceFullUpdateWithReinstall(projectName, teamID, label, publicKey),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckCherryServersServerExists("cherryservers_server.test_server_server"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "bmc.password", ""),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "bmc.user", ""),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "id", regexp.MustCompile("[0-9]+")),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.0.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
+					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.1.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "power_state", "on"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "spot_instance", "false"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "state", "active"),
+					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "username", "root"),
+				),
+			},
 		},
 	})
 }
@@ -223,6 +239,45 @@ resource "cherryservers_server" "test_server_server" {
   timeouts = {
     create = "20m"
   }
+}
+`, projectName, teamID, sshKeyLabel, sshKeyPublicKey)
+}
+
+func testAccServerResourceFullUpdateWithReinstall(projectName string, teamID string, sshKeyLabel string, sshKeyPublicKey string) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%s"
+}
+
+resource "cherryservers_ssh_key" "test_server_ssh_key" {
+  label = "%s"
+  public_key = "%s"
+}
+
+resource "cherryservers_ip" "test_server_ip" {
+  project_id = "${cherryservers_project.test_server_project.id}"
+  region = "eu_nord_1"
+}
+
+resource "cherryservers_server" "test_server_server" {
+  region = "eu_nord_1"
+  plan = "cloud_vps_1"
+  project_id = "${cherryservers_project.test_server_project.id}"
+  name = "test-reinstall"
+  hostname = "server-reinstall-test"
+  image = "fedora_39_64bit"
+  ssh_key_ids = []
+  extra_ip_addresses_ids = []
+  tags = {
+    env = "reinstall"
+  }
+  spot_instance = "false"
+  timeouts = {
+    create = "20m"
+	update = "10m"
+  }
+  allow_reinstall = true
 }
 `, projectName, teamID, sshKeyLabel, sshKeyPublicKey)
 }
