@@ -245,7 +245,7 @@ func (d *serverDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	var serverID int
 	if data.Hostname.ValueString() != "" {
 		var err error
-		serverID, err = ServerHostnameToID(data.Hostname.ValueString(), int(data.ProjectId.ValueInt64()), d.client.Servers)
+		serverID, err = serverHostnameToID(data.Hostname.ValueString(), int(data.ProjectId.ValueInt64()), d.client.Servers)
 		if err != nil {
 			resp.Diagnostics.AddError("couldn't find server ID from hostname", err.Error())
 			return
@@ -271,7 +271,7 @@ func (d *serverDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	if err = NormalizeServerImage(&server, d.client); err != nil {
+	if err = normalizeServerImage(&server, d.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 

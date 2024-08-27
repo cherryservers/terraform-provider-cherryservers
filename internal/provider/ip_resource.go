@@ -443,7 +443,7 @@ func (d *ipResourceModel) getTargetId(r *ipResource) (string, error) {
 	if d.TargetId.ValueString() != "0" && d.TargetId.ValueString() != "" {
 		return d.TargetId.ValueString(), nil
 	} else if d.TargetHostname.ValueString() != "" {
-		srvID, err := ServerHostnameToID(d.TargetHostname.ValueString(), int(d.ProjectId.ValueInt64()), r.client.Servers)
+		srvID, err := serverHostnameToID(d.TargetHostname.ValueString(), int(d.ProjectId.ValueInt64()), r.client.Servers)
 		return strconv.Itoa(srvID), err
 	}
 	return "0", nil

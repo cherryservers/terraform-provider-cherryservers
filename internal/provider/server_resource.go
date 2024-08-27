@@ -449,7 +449,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	if !data.UserData.IsNull() {
 		userData := data.UserData.ValueString()
-		if err := IsBase64(userData); err == nil {
+		if err := isBase64(userData); err == nil {
 			request.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
@@ -525,7 +525,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	if err = NormalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(&server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -578,7 +578,7 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	if err = NormalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(&server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -650,7 +650,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	if err = NormalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(&server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -681,7 +681,7 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 
 	if !plan.UserData.IsNull() {
 		userData := plan.UserData.ValueString()
-		if err := IsBase64(userData); err == nil {
+		if err := isBase64(userData); err == nil {
 			requestReinstall.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
