@@ -6,6 +6,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -20,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strconv"
@@ -55,6 +57,7 @@ type serverResourceModel struct {
 	Image               types.String   `tfsdk:"image"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
+	IPAddressesIds      types.Set      `tfsdk:"ip_addresses_ids"`
 	UserData            types.String   `tfsdk:"user_data"`
 	Tags                types.Map      `tfsdk:"tags"`
 	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
@@ -175,7 +178,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Description: "Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).",
 			},
 			"project_id": schema.Int64Attribute{
-				Description: "CherryServers project id, associated with the server.",
+				Description: "ID of the project to which the server belongs.",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
@@ -273,6 +276,20 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.Set{
+					setvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("ip_addresses_ids"),
+					}...),
+				},
+			},
+			"ip_addresses_ids": schema.SetAttribute{
+				Description: "**Deprecated**.Set of the IP address IDs to be embedded into the server.",
+				Optional:    true,
+				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
+				},
+				DeprecationMessage: "use extra_ip_addresses_ids instead",
 			},
 			"user_data": schema.StringAttribute{
 				Description: "Base64 encoded user-data blob. It should be a bash or cloud-config script. " +
@@ -432,13 +449,24 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		request.SSHKeys = sshIds
 	}
 
-	if !data.ExtraIPAddressesIds.IsUnknown() {
-		ipsIds := make([]string, 0, len(data.ExtraIPAddressesIds.Elements()))
-		diags := data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
-		resp.Diagnostics.Append(diags...)
+	if !data.ExtraIPAddressesIds.IsNull() {
+		if !data.ExtraIPAddressesIds.IsUnknown() {
+			ipsIds := make([]string, 0, len(data.ExtraIPAddressesIds.Elements()))
+			diags := data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
+			resp.Diagnostics.Append(diags...)
 
-		request.IPAddresses = ipsIds
+			request.IPAddresses = ipsIds
 
+		}
+	} else {
+		if !data.IPAddressesIds.IsUnknown() {
+			ipsIds := make([]string, 0, len(data.IPAddressesIds.Elements()))
+			diags := data.IPAddressesIds.ElementsAs(ctx, &ipsIds, false)
+			resp.Diagnostics.Append(diags...)
+
+			request.IPAddresses = ipsIds
+
+		}
 	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))
