@@ -32,25 +32,24 @@ type serverDataSource struct {
 }
 
 type serverDataSourceModel struct {
-	Plan                types.String   `tfsdk:"plan"`
-	ProjectId           types.Int64    `tfsdk:"project_id"`
-	Region              types.String   `tfsdk:"region"`
-	Hostname            types.String   `tfsdk:"hostname"`
-	Name                types.String   `tfsdk:"name"`
-	Username            types.String   `tfsdk:"username"`
-	Password            types.String   `tfsdk:"password"`
-	BMC                 types.Object   `tfsdk:"bmc"`
-	Image               types.String   `tfsdk:"image"`
-	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
-	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
-	Tags                types.Map      `tfsdk:"tags"`
-	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
-	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
-	PowerState          types.String   `tfsdk:"power_state"`
-	State               types.String   `tfsdk:"state"`
-	IpAddresses         types.Set      `tfsdk:"ip_addresses"`
-	Id                  types.String   `tfsdk:"id"`
-	Timeouts            timeouts.Value `tfsdk:"timeouts"`
+	Plan            types.String   `tfsdk:"plan"`
+	ProjectId       types.Int64    `tfsdk:"project_id"`
+	Region          types.String   `tfsdk:"region"`
+	Hostname        types.String   `tfsdk:"hostname"`
+	Name            types.String   `tfsdk:"name"`
+	Username        types.String   `tfsdk:"username"`
+	Password        types.String   `tfsdk:"password"`
+	BMC             types.Object   `tfsdk:"bmc"`
+	Image           types.String   `tfsdk:"image"`
+	SSHKeyIds       types.Set      `tfsdk:"ssh_key_ids"`
+	Tags            types.Map      `tfsdk:"tags"`
+	SpotInstance    types.Bool     `tfsdk:"spot_instance"`
+	OSPartitionSize types.Int64    `tfsdk:"os_partition_size"`
+	PowerState      types.String   `tfsdk:"power_state"`
+	State           types.String   `tfsdk:"state"`
+	IpAddresses     types.Set      `tfsdk:"ip_addresses"`
+	Id              types.String   `tfsdk:"id"`
+	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (d *serverDataSourceModel) populateModel(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -67,7 +66,6 @@ func (d *serverDataSourceModel) populateModel(server cherrygo.Server, ctx contex
 	d.BMC = resourceModel.BMC
 	d.Image = resourceModel.Image
 	d.SSHKeyIds = resourceModel.SSHKeyIds
-	//d.ExtraIPAddressesIds = resourceModel.ExtraIPAddressesIds
 	d.Tags = resourceModel.Tags
 	d.SpotInstance = resourceModel.SpotInstance
 	d.OSPartitionSize = resourceModel.OSPartitionSize
@@ -145,11 +143,6 @@ func (d *serverDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 			},
 			"ssh_key_ids": schema.SetAttribute{
 				Description: "Set of the SSH key IDs allowed to SSH to the server.",
-				Computed:    true,
-				ElementType: types.StringType,
-			},
-			"extra_ip_addresses_ids": schema.SetAttribute{
-				Description: "Set of the IP address IDs to be embedded into the Server.",
 				Computed:    true,
 				ElementType: types.StringType,
 			},
