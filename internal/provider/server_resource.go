@@ -441,7 +441,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		SpotInstance: data.SpotInstance.ValueBool(),
 	}
 
-	if !data.SSHKeyIds.IsUnknown() {
+	if !data.SSHKeyIds.IsNull() {
 		sshIds := make([]string, 0, len(data.SSHKeyIds.Elements()))
 		diags := data.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
 		resp.Diagnostics.Append(diags...)
@@ -450,23 +450,18 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	if !data.ExtraIPAddressesIds.IsNull() {
-		if !data.ExtraIPAddressesIds.IsUnknown() {
-			ipsIds := make([]string, 0, len(data.ExtraIPAddressesIds.Elements()))
-			diags := data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
-			resp.Diagnostics.Append(diags...)
+		ipsIds := make([]string, 0, len(data.ExtraIPAddressesIds.Elements()))
+		diags := data.ExtraIPAddressesIds.ElementsAs(ctx, &ipsIds, false)
+		resp.Diagnostics.Append(diags...)
 
-			request.IPAddresses = ipsIds
+		request.IPAddresses = ipsIds
 
-		}
-	} else {
-		if !data.IPAddressesIds.IsUnknown() {
-			ipsIds := make([]string, 0, len(data.IPAddressesIds.Elements()))
-			diags := data.IPAddressesIds.ElementsAs(ctx, &ipsIds, false)
-			resp.Diagnostics.Append(diags...)
+	} else if !data.IPAddressesIds.IsNull() {
+		ipsIds := make([]string, 0, len(data.IPAddressesIds.Elements()))
+		diags := data.IPAddressesIds.ElementsAs(ctx, &ipsIds, false)
+		resp.Diagnostics.Append(diags...)
 
-			request.IPAddresses = ipsIds
-
-		}
+		request.IPAddresses = ipsIds
 	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))
