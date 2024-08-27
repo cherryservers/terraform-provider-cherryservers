@@ -117,7 +117,7 @@ func (d warnIfChangedModifier) PlanModifyString(ctx context.Context, req planmod
 		return
 	}
 
-	resp.Diagnostics.AddWarning(d.warningSummary, d.warningDetail)
+	resp.Diagnostics.AddAttributeWarning(req.Path, d.warningSummary, d.warningDetail)
 }
 
 func (d warnIfChangedModifier) PlanModifySet(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
@@ -131,7 +131,7 @@ func (d warnIfChangedModifier) PlanModifySet(ctx context.Context, req planmodifi
 		return
 	}
 
-	resp.Diagnostics.AddWarning(d.warningSummary, d.warningDetail)
+	resp.Diagnostics.AddAttributeWarning(req.Path, d.warningSummary, d.warningDetail)
 }
 
 func (d warnIfChangedModifier) PlanModifyInt64(ctx context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
@@ -145,5 +145,5 @@ func (d warnIfChangedModifier) PlanModifyInt64(ctx context.Context, req planmodi
 		return
 	}
 
-	resp.Diagnostics.AddWarning(d.warningSummary, d.warningDetail)
+	resp.Diagnostics.AddAttributeWarning(req.Path, d.warningSummary, d.warningDetail)
 }

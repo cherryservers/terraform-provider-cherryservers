@@ -247,10 +247,10 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 					WarnIfChangedString("Server re-install required.",
 						"You are updating attributes that require a server re-install."+
 							" This will wipe all of your data and may take awhile."),
-					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
@@ -260,10 +260,10 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
 					WarnIfChangedSet("Server re-install required.",
 						"You are updating attributes that require a server re-install."+
 							" This will wipe all of your data and may take awhile."),
-					setplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
