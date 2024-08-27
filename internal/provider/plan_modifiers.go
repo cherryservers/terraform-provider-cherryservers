@@ -85,7 +85,7 @@ func WarnIfChangedSet(warningSummary, warningDetail string) planmodifier.Set {
 	}
 }
 
-// WarnIfChangednt64 returns a plan modifier that displays a warning if an attribute will be changed on update.
+// WarnIfChangedInt64 returns a plan modifier that displays a warning if an attribute will be changed on update.
 func WarnIfChangedInt64(warningSummary, warningDetail string) planmodifier.Int64 {
 	return warnIfChangedModifier{
 		warningSummary: warningSummary,
