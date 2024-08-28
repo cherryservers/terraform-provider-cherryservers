@@ -32,7 +32,7 @@ type sshKeyResource struct {
 
 // sshKeyResourceModel describes the resource data model.
 type sshKeyResourceModel struct {
-	Label       types.String `tfsdk:"label"`
+	Name        types.String `tfsdk:"name"`
 	PublicKey   types.String `tfsdk:"public_key"`
 	Fingerprint types.String `tfsdk:"fingerprint"`
 	Created     types.String `tfsdk:"created"`
@@ -41,8 +41,7 @@ type sshKeyResourceModel struct {
 }
 
 func (d *sshKeyResourceModel) populateModel(sshKey cherrygo.SSHKey) {
-	d.Label = types.StringValue(sshKey.Label)
-	//d.PublicKey = types.StringValue(sshKey.Key)
+	d.Name = types.StringValue(sshKey.Label)
 	d.Fingerprint = types.StringValue(sshKey.Fingerprint)
 	d.Created = types.StringValue(sshKey.Created)
 	d.Updated = types.StringValue(sshKey.Updated)
@@ -63,7 +62,7 @@ func (r *sshKeyResource) Schema(ctx context.Context, req resource.SchemaRequest,
 		Description: "Provides a CherryServers SSH Key resource. This can be used to create, and delete SSH Keys associated with your Cherry account.",
 
 		Attributes: map[string]schema.Attribute{
-			"label": schema.StringAttribute{
+			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Label of the SSH key.",
 			},
@@ -122,7 +121,7 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	request := &cherrygo.CreateSSHKey{
-		Label: data.Label.ValueString(),
+		Label: data.Name.ValueString(),
 		Key:   strings.TrimSpace(data.PublicKey.ValueString()),
 	}
 
@@ -199,7 +198,7 @@ func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	label := data.Label.ValueString()
+	label := data.Name.ValueString()
 	publicKey := strings.TrimSpace(data.PublicKey.ValueString())
 
 	request := cherrygo.UpdateSSHKey{

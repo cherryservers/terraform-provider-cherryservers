@@ -25,7 +25,6 @@ func TestAccProjectResource_basic(t *testing.T) {
 				Config: testAccProjectResourceConfig(name, teamId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersProjectExists("cherryservers_project.test"),
-					resource.TestMatchResourceAttr("cherryservers_project.test", "href", regexp.MustCompile("/projects/[0-9]+")),
 					resource.TestCheckResourceAttr("cherryservers_project.test", "bgp.enabled", "false"),
 					resource.TestCheckResourceAttrSet("cherryservers_project.test", "bgp.local_asn"),
 					resource.TestMatchResourceAttr("cherryservers_project.test", "id", regexp.MustCompile("[0-9]+")),

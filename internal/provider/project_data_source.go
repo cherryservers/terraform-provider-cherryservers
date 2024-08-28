@@ -28,7 +28,6 @@ type projectDataSource struct {
 // projectDataSourceModel describes the data source data model.
 type projectDataSourceModel struct {
 	Name types.String     `tfsdk:"name"`
-	Href types.String     `tfsdk:"href"`
 	BGP  *projectBGPModel `tfsdk:"bgp"`
 	Id   types.Int64      `tfsdk:"id"`
 }
@@ -57,10 +56,6 @@ func (d *projectDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Description: "The name of the project.",
-				Computed:    true,
-			},
-			"href": schema.StringAttribute{
-				Description: "The hypertext reference attribute(href) of the project.",
 				Computed:    true,
 			},
 			"bgp": schema.SingleNestedAttribute{
@@ -138,7 +133,6 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	state.Id = types.Int64Value(int64(project.ID))
-	state.Href = types.StringValue(project.Href)
 	state.Name = types.StringValue(project.Name)
 	state.BGP = &projectBGPModel{
 		Enabled:  types.BoolValue(project.Bgp.Enabled),

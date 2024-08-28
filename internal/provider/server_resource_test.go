@@ -204,7 +204,7 @@ resource "cherryservers_project" "test_server_project" {
 }
 
 resource "cherryservers_ssh_key" "test_server_ssh_key" {
-  label = "%s"
+  name = "%s"
   public_key = "%s"
 }
 
@@ -241,7 +241,7 @@ resource "cherryservers_project" "test_server_project" {
 }
 
 resource "cherryservers_ssh_key" "test_server_ssh_key" {
-  label = "%s"
+  name = "%s"
   public_key = "%s"
 }
 

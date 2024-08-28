@@ -23,7 +23,6 @@ func TestAccProjectDataSource(t *testing.T) {
 				Config: testAccProjectDataSourceConfig(name, teamId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
-					resource.TestCheckResourceAttrPair(datasourceName, "href", resourceName, "href"),
 					resource.TestCheckResourceAttrPair(datasourceName, "bgp.enabled", resourceName, "bgp.enabled"),
 					resource.TestCheckResourceAttrPair(datasourceName, "bgp.local_asn", resourceName, "bgp.local_asn"),
 				),

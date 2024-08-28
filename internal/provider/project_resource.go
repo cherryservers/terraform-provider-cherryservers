@@ -40,7 +40,6 @@ type projectResource struct {
 type projectResourceModel struct {
 	Name   types.String `tfsdk:"name"`
 	TeamId types.Int64  `tfsdk:"team_id"`
-	Href   types.String `tfsdk:"href"`
 	BGP    types.Object `tfsdk:"bgp"`
 	Id     types.String `tfsdk:"id"`
 }
@@ -58,7 +57,6 @@ func (d *projectResourceModel) populateState(project cherrygo.Project, ctx conte
 	d.BGP = bgpTf
 	diags.Append(bgpDiags...)
 
-	d.Href = types.StringValue(project.Href)
 	d.Name = types.StringValue(project.Name)
 
 }
@@ -82,13 +80,6 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Required:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
-				},
-			},
-			"href": schema.StringAttribute{
-				Description: "The hypertext reference attribute (href) of the project.",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"bgp": schema.SingleNestedAttribute{

@@ -31,7 +31,7 @@ type sshKeyDataSource struct {
 
 // sshKeyDataSourceModel describes the resource data model.
 type sshKeyDataSourceModel struct {
-	Label       types.String `tfsdk:"label"`
+	Name        types.String `tfsdk:"name"`
 	PublicKey   types.String `tfsdk:"public_key"`
 	Fingerprint types.String `tfsdk:"fingerprint"`
 	Created     types.String `tfsdk:"created"`
@@ -40,7 +40,7 @@ type sshKeyDataSourceModel struct {
 }
 
 func (d *sshKeyDataSourceModel) populateModel(sshKey cherrygo.SSHKey) {
-	d.Label = types.StringValue(sshKey.Label)
+	d.Name = types.StringValue(sshKey.Label)
 	d.PublicKey = types.StringValue(sshKey.Key)
 	d.Fingerprint = types.StringValue(sshKey.Fingerprint)
 	d.Created = types.StringValue(sshKey.Created)
@@ -50,7 +50,7 @@ func (d *sshKeyDataSourceModel) populateModel(sshKey cherrygo.SSHKey) {
 
 func (d *sshKeyDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{
-		datasourcevalidator.ExactlyOneOf(path.MatchRoot("label"), path.MatchRoot("id")),
+		datasourcevalidator.ExactlyOneOf(path.MatchRoot("name"), path.MatchRoot("id")),
 	}
 }
 
@@ -64,7 +64,7 @@ func (d *sshKeyDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 		Description: "Provides a CherryServers SSH Key data source. This can be used to read SSH Keys associated with your Cherry account.",
 
 		Attributes: map[string]schema.Attribute{
-			"label": schema.StringAttribute{
+			"name": schema.StringAttribute{
 				Computed:    true,
 				Optional:    true,
 				Description: "Label of the SSH key.",
@@ -126,7 +126,7 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	var sshKeyID int
 	//Get SSH key ID by label and project ID.
-	if !state.Label.IsNull() {
+	if !state.Name.IsNull() {
 		getOptions := cherrygo.GetOptions{}
 		getOptions.Fields = []string{"ssh_key", "email"}
 
@@ -136,9 +136,9 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			return
 		}
 		for _, sshKey := range sshKeys {
-			if sshKey.Label == state.Label.ValueString() {
+			if sshKey.Label == state.Name.ValueString() {
 				if sshKeyID != 0 {
-					resp.Diagnostics.AddError("multiple SSH keys with the same label", "multiple SSH keys with the same label")
+					resp.Diagnostics.AddError("multiple SSH keys with the same name", "multiple SSH keys with the same name")
 					return
 				}
 				sshKeyID = sshKey.ID

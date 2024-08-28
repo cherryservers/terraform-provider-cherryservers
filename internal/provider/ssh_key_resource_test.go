@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccSSHKeyResource_basic(t *testing.T) {
-	label := "terraform_test_ssh_" + acctest.RandString(5)
+	name := "terraform_test_ssh_" + acctest.RandString(5)
 	publicKey, _, err := acctest.RandSSHKeyPair("cherryservers@ssh-acceptance-test")
 	if err != nil {
 		t.Fatalf("Cannot generate test SSH key pair: %s", err)
@@ -28,7 +28,7 @@ func TestAccSSHKeyResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccSSHKeyConfig(label, publicKey),
+				Config: testAccSSHKeyConfig(name, publicKey),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersSSHKeyExists("cherryservers_ssh_key.test_ssh_key_ssh_key"),
 					resource.TestCheckResourceAttrSet("cherryservers_ssh_key.test_ssh_key_ssh_key", "created"),
@@ -45,9 +45,9 @@ func TestAccSSHKeyResource_basic(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccSSHKeyConfig(label+"_update", publicKeyUpdate),
+				Config: testAccSSHKeyConfig(name+"_update", publicKeyUpdate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cherryservers_ssh_key.test_ssh_key_ssh_key", "label", label+"_update"),
+					resource.TestCheckResourceAttr("cherryservers_ssh_key.test_ssh_key_ssh_key", "name", name+"_update"),
 					resource.TestCheckResourceAttr("cherryservers_ssh_key.test_ssh_key_ssh_key", "public_key", publicKeyUpdate),
 				),
 			},
@@ -110,11 +110,11 @@ func testAccCheckCherryServersSSHKeyDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccSSHKeyConfig(label string, publicKey string) string {
+func testAccSSHKeyConfig(name string, publicKey string) string {
 	return fmt.Sprintf(`
 resource "cherryservers_ssh_key" "test_ssh_key_ssh_key" {
-  label = "%s"
+  name = "%s"
   public_key = "%s"
 }
-`, label, publicKey)
+`, name, publicKey)
 }
