@@ -45,9 +45,10 @@ func TestAccServerResource_basic(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "cherryservers_server." + serverResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "cherryservers_server." + serverResourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"allow_reinstall"},
 			},
 			// Update and Read testing
 			{
