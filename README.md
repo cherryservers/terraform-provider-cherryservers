@@ -1,7 +1,7 @@
 # Cherry Servers Terraform Provider
 
-![GitHub Release](https://img.shields.io/github/v/release/caliban0/terraform-provider-cherryservers?include_prereleases)
-[![codecov](https://codecov.io/gh/caliban0/terraform-provider-cherryservers/graph/badge.svg?token=E0YQGYS8JH)](https://codecov.io/gh/caliban0/terraform-provider-cherryservers)
+![GitHub Release](https://img.shields.io/github/v/release/cherryservers/terraform-provider-cherryservers?include_prereleases)
+[![codecov](https://codecov.io/gh/cherryservers/terraform-provider-cherryservers/graph/badge.svg?token=92SWET4NJJ)](https://codecov.io/gh/cherryservers/terraform-provider-cherryservers)
 
 - Cherry Servers Website: https://www.cherryservers.com
 - Terraform Website: https://www.terraform.io
