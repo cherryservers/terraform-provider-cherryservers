@@ -24,7 +24,7 @@ func testAccGetResourceIdInt(resourceName string, resourceType string, s *terraf
 	return ID, nil
 }
 
-// generateAlphaString generates a random lowercase alphabetic string
+// generateAlphaString generates a random lowercase alphabetic string.
 func generateAlphaString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz"
 
