@@ -37,9 +37,6 @@ type serverDataSourceModel struct {
 	Region          types.String   `tfsdk:"region"`
 	Hostname        types.String   `tfsdk:"hostname"`
 	Name            types.String   `tfsdk:"name"`
-	Username        types.String   `tfsdk:"username"`
-	Password        types.String   `tfsdk:"password"`
-	BMC             types.Object   `tfsdk:"bmc"`
 	Image           types.String   `tfsdk:"image"`
 	SSHKeyIds       types.Set      `tfsdk:"ssh_key_ids"`
 	Tags            types.Map      `tfsdk:"tags"`
@@ -61,9 +58,6 @@ func (d *serverDataSourceModel) populateModel(server cherrygo.Server, ctx contex
 	d.Region = resourceModel.Region
 	d.Hostname = resourceModel.Hostname
 	d.Name = resourceModel.Name
-	d.Username = resourceModel.Username
-	d.Password = resourceModel.Password
-	d.BMC = resourceModel.BMC
 	d.Image = resourceModel.Image
 	d.SSHKeyIds = resourceModel.SSHKeyIds
 	d.Tags = resourceModel.Tags
@@ -114,28 +108,6 @@ func (d *serverDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Description: "Hostname of the server.",
 				Computed:    true,
 				Optional:    true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Server username credential.",
-				Computed:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Server password credential.",
-				Computed:    true,
-				Sensitive:   true,
-			},
-			"bmc": schema.SingleNestedAttribute{
-				Description: "Server BMC credentials.",
-				Computed:    true,
-				Attributes: map[string]schema.Attribute{
-					"user": schema.StringAttribute{
-						Computed: true,
-					},
-					"password": schema.StringAttribute{
-						Computed:  true,
-						Sensitive: true,
-					},
-				},
 			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).",

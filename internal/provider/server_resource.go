@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -51,9 +50,6 @@ type serverResourceModel struct {
 	Region              types.String   `tfsdk:"region"`
 	Hostname            types.String   `tfsdk:"hostname"`
 	Name                types.String   `tfsdk:"name"`
-	Username            types.String   `tfsdk:"username"`
-	Password            types.String   `tfsdk:"password"`
-	BMC                 types.Object   `tfsdk:"bmc"`
 	Image               types.String   `tfsdk:"image"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
@@ -76,17 +72,6 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	d.Region = types.StringValue(server.Region.Slug)
 	d.Hostname = types.StringValue(server.Hostname)
 	d.Name = types.StringValue(server.Name)
-	d.Username = types.StringValue(server.Username)
-	d.Password = types.StringValue(server.Password)
-
-	bmcModel := bmcResourceModel{
-		User:     types.StringValue(server.BMC.User),
-		Password: types.StringValue(server.BMC.Password),
-	}
-	bmcTf, bmcDiags := types.ObjectValueFrom(ctx, bmcModel.AttributeTypes(), bmcModel)
-	diags.Append(bmcDiags...)
-
-	d.BMC = bmcTf
 
 	d.Image = types.StringValue(server.Image)
 
@@ -148,18 +133,6 @@ func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
 	}
 }
 
-type bmcResourceModel struct {
-	User     types.String `tfsdk:"user"`
-	Password types.String `tfsdk:"password"`
-}
-
-func (m bmcResourceModel) AttributeTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"user":     types.StringType,
-		"password": types.StringType,
-	}
-}
-
 func (r *serverResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_server"
 }
@@ -205,43 +178,6 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"username": schema.StringAttribute{
-				Description: "Server username credential.",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"password": schema.StringAttribute{
-				Description: "Server password credential.",
-				Computed:    true,
-				Sensitive:   true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"bmc": schema.SingleNestedAttribute{
-				Description: "Server BMC credentials.",
-				Computed:    true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.UseStateForUnknown(),
-				},
-				Attributes: map[string]schema.Attribute{
-					"user": schema.StringAttribute{
-						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
-					},
-					"password": schema.StringAttribute{
-						Computed:  true,
-						Sensitive: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
-					},
 				},
 			},
 			"image": schema.StringAttribute{
