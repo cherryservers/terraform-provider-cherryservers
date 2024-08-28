@@ -441,7 +441,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		SpotInstance: data.SpotInstance.ValueBool(),
 	}
 
-	if !data.SSHKeyIds.IsNull() {
+	if !data.SSHKeyIds.IsNull() && !data.SSHKeyIds.IsUnknown() {
 		sshIds := make([]string, 0, len(data.SSHKeyIds.Elements()))
 		diags := data.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
 		resp.Diagnostics.Append(diags...)
@@ -464,11 +464,13 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		request.IPAddresses = ipsIds
 	}
 
-	tagsMap := make(map[string]string, len(data.Tags.Elements()))
-	diags := data.Tags.ElementsAs(ctx, &tagsMap, false)
-	resp.Diagnostics.Append(diags...)
+	if !data.Tags.IsNull() && !data.Tags.IsUnknown() {
+		tagsMap := make(map[string]string, len(data.Tags.Elements()))
+		diags := data.Tags.ElementsAs(ctx, &tagsMap, false)
+		resp.Diagnostics.Append(diags...)
 
-	request.Tags = &tagsMap
+		request.Tags = &tagsMap
+	}
 
 	if !data.UserData.IsNull() {
 		userData := data.UserData.ValueString()
@@ -643,11 +645,13 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Name:     plan.Name.ValueString(),
 	}
 
-	tagsMap := make(map[string]string, len(plan.Tags.Elements()))
-	diags := plan.Tags.ElementsAs(ctx, &tagsMap, false)
-	resp.Diagnostics.Append(diags...)
+	if !plan.Tags.IsNull() && !plan.Tags.IsUnknown() {
+		tagsMap := make(map[string]string, len(plan.Tags.Elements()))
+		diags := plan.Tags.ElementsAs(ctx, &tagsMap, false)
+		resp.Diagnostics.Append(diags...)
 
-	requestUpdate.Tags = &tagsMap
+		requestUpdate.Tags = &tagsMap
+	}
 
 	server, _, err := r.client.Servers.Update(serverID, &requestUpdate)
 	if err != nil {
@@ -690,16 +694,19 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 	password := generatePassword()
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
 
-	sshIds := make([]string, 0, len(plan.SSHKeyIds.Elements()))
-	diags := plan.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
-	resp.Diagnostics.Append(diags...)
-
 	requestReinstall := &cherrygo.ReinstallServerFields{
 		Image:           plan.Image.ValueString(),
 		Hostname:        plan.Hostname.ValueString(),
 		Password:        password,
-		SSHKeys:         sshIds,
 		OSPartitionSize: int(plan.OSPartitionSize.ValueInt64()),
+	}
+
+	if !plan.SSHKeyIds.IsNull() && !plan.SSHKeyIds.IsUnknown() {
+		sshIds := make([]string, 0, len(plan.SSHKeyIds.Elements()))
+		diags := plan.SSHKeyIds.ElementsAs(ctx, &sshIds, false)
+		resp.Diagnostics.Append(diags...)
+
+		requestReinstall.SSHKeys = sshIds
 	}
 
 	if !plan.UserData.IsNull() {
