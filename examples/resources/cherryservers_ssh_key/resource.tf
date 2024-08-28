@@ -7,6 +7,6 @@ variable "ssh_key_path" {
 }
 
 resource "cherryservers_ssh_key" "my_ssh_key" {
-  label      = "mykey"
+  name       = "mykey"
   public_key = file(var.ssh_key_path) # The public key contents can also be stored specific here directly
 }

@@ -29,7 +29,6 @@ data "cherryservers_project" "cool_project" {
 ### Read-Only
 
 - `bgp` (Attributes) Project border gateway protocol(BGP) configuration. (see [below for nested schema](#nestedatt--bgp))
-- `href` (String) The hypertext reference attribute(href) of the project.
 - `name` (String) The name of the project.
 
 <a id="nestedatt--bgp"></a>

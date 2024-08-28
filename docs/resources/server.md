@@ -43,7 +43,7 @@ resource "cherryservers_server" "server" {
 ### Required
 
 - `plan` (String) Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).
-- `project_id` (Number) CherryServers project id, associated with the server.
+- `project_id` (Number) ID of the project to which the server belongs.
 - `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 
 ### Optional
@@ -52,6 +52,7 @@ resource "cherryservers_server" "server" {
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
 - `hostname` (String) Hostname of the server.
 - `image` (String) Slug of the server operating system. Updating this attribute requires a server re-install.
+- `ip_addresses_ids` (Set of String, Deprecated) **Deprecated**.Set of the IP address IDs to be embedded into the server.
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB. Updating this attribute requires a server re-install.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
@@ -62,13 +63,10 @@ resource "cherryservers_server" "server" {
 
 ### Read-Only
 
-- `bmc` (Attributes) Server BMC credentials. (see [below for nested schema](#nestedatt--bmc))
 - `id` (String) Server identifier.
 - `ip_addresses` (Attributes Set) IP addresses attached to the server. (see [below for nested schema](#nestedatt--ip_addresses))
-- `password` (String, Sensitive) Server password credential.
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.
 - `state` (String) The state of the server, such as 'pending' or 'active'.
-- `username` (String) Server username credential.
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
@@ -77,15 +75,6 @@ Optional:
 
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
-
-
-<a id="nestedatt--bmc"></a>
-### Nested Schema for `bmc`
-
-Read-Only:
-
-- `password` (String, Sensitive)
-- `user` (String)
 
 
 <a id="nestedatt--ip_addresses"></a>

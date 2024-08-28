@@ -44,7 +44,6 @@ resource "cherryservers_project" "project_with_bgp" {
 
 ### Read-Only
 
-- `href` (String) The hypertext reference attribute (href) of the project.
 - `id` (String) Project identifier.
 
 <a id="nestedatt--bgp"></a>

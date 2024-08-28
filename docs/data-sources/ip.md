@@ -37,16 +37,16 @@ data "cherryservers_ip" "by_address" {
 ### Read-Only
 
 - `a_record` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.
-- `a_record_actual` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.API return value.
+- `a_record_effective` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.API return value.
 - `address_family` (Number) IP address family IPv4 or IPv6.
 - `cidr` (String) The CIDR block of the IP.
 - `ddos_scrubbing` (Boolean) If true, DDOS scrubbing protection will be applied in real-time.
 - `gateway` (String) The gateway IP address.
 - `ptr_record` (String) Reverse DNS name for the IP address.
-- `ptr_record_actual` (String) Reverse DNS name for the IP address, API return value.
+- `ptr_record_effective` (String) Reverse DNS name for the IP address. API return value.
 - `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
-- `route_ip_id` (String) Subnet or primary-ip type IP ID to route the created IP to.Conflicts with target_hostname and target_id.
 - `tags` (Map of String) Key/value metadata for server tagging.
-- `target_hostname` (String) The hostname of the server to which the IP is attached.Conflicts with target_id and route_ip_id.
-- `target_id` (String) The ID of the server to which the IP is attached.Conflicts with target_hostname and route_ip_id.
+- `target_hostname` (String) The hostname of the server to which the IP is attached.Conflicts with target_id and target_ip_id.
+- `target_id` (String) The ID of the server to which the IP is attached.Conflicts with target_hostname and target_ip_id.
+- `target_ip_id` (String) Subnet or primary-ip type IP ID to target the created IP to.Conflicts with target_hostname and target_id.
 - `type` (String) The type of IP address.

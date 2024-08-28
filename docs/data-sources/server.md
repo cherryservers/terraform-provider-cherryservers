@@ -37,13 +37,10 @@ data "cherryservers_server" "by_hostname" {
 
 ### Read-Only
 
-- `bmc` (Attributes) Server BMC credentials. (see [below for nested schema](#nestedatt--bmc))
-- `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the Server.
 - `image` (String) Slug of the operating system. Example: ubuntu_22_04. [See List Images](https://api.cherryservers.com/doc/#tag/Images/operation/get-plan-images).
 - `ip_addresses` (Attributes Set) IP addresses attached to the server. (see [below for nested schema](#nestedatt--ip_addresses))
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB.
-- `password` (String, Sensitive) Server password credential.
 - `plan` (String) Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.
 - `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
@@ -51,7 +48,6 @@ data "cherryservers_server" "by_hostname" {
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
 - `state` (String) The state of the server, such as 'pending' or 'active'.
 - `tags` (Map of String) Key/value metadata for server tagging.
-- `username` (String) Server username credential.
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
@@ -59,15 +55,6 @@ data "cherryservers_server" "by_hostname" {
 Optional:
 
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
-
-
-<a id="nestedatt--bmc"></a>
-### Nested Schema for `bmc`
-
-Read-Only:
-
-- `password` (String, Sensitive)
-- `user` (String)
 
 
 <a id="nestedatt--ip_addresses"></a>

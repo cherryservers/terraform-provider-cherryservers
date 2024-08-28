@@ -3,7 +3,7 @@ data "cherryservers_ssh_key" "my_ssh_key" {
   id = "1234"
 }
 
-# Get SSH key info by label.
-data "cherryservers_ssh_key" "by_label" {
-  label = "ssh-key-label"
+# Get SSH key info by name.
+data "cherryservers_ssh_key" "by_name" {
+  name = "ssh-key-label"
 }
