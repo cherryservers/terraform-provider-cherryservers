@@ -40,23 +40,23 @@ type ipResource struct {
 
 // ipResourceModel describes the resource data model.
 type ipResourceModel struct {
-	Id              types.String `tfsdk:"id"`
-	ProjectId       types.Int64  `tfsdk:"project_id"`
-	Region          types.String `tfsdk:"region"`
-	TargetId        types.String `tfsdk:"target_id"`
-	TargetHostname  types.String `tfsdk:"target_hostname"`
-	RouteIPID       types.String `tfsdk:"route_ip_id"`
-	DDOSScrubbing   types.Bool   `tfsdk:"ddos_scrubbing"`
-	ARecord         types.String `tfsdk:"a_record"`
-	ARecordActual   types.String `tfsdk:"a_record_actual"`
-	PTRRecord       types.String `tfsdk:"ptr_record"`
-	PTRRecordActual types.String `tfsdk:"ptr_record_actual"`
-	Address         types.String `tfsdk:"address"`
-	AddressFamily   types.Int64  `tfsdk:"address_family"`
-	CIDR            types.String `tfsdk:"cidr"`
-	Gateway         types.String `tfsdk:"gateway"`
-	Type            types.String `tfsdk:"type"`
-	Tags            types.Map    `tfsdk:"tags"`
+	Id                 types.String `tfsdk:"id"`
+	ProjectId          types.Int64  `tfsdk:"project_id"`
+	Region             types.String `tfsdk:"region"`
+	TargetId           types.String `tfsdk:"target_id"`
+	TargetHostname     types.String `tfsdk:"target_hostname"`
+	TargetIPID         types.String `tfsdk:"target_ip_id"`
+	DDOSScrubbing      types.Bool   `tfsdk:"ddos_scrubbing"`
+	ARecord            types.String `tfsdk:"a_record"`
+	ARecordEffective   types.String `tfsdk:"a_record_effective"`
+	PTRRecord          types.String `tfsdk:"ptr_record"`
+	PTRRecordEffective types.String `tfsdk:"ptr_record_effective"`
+	Address            types.String `tfsdk:"address"`
+	AddressFamily      types.Int64  `tfsdk:"address_family"`
+	CIDR               types.String `tfsdk:"cidr"`
+	Gateway            types.String `tfsdk:"gateway"`
+	Type               types.String `tfsdk:"type"`
+	Tags               types.Map    `tfsdk:"tags"`
 }
 
 func (d *ipResourceModel) populateState(ip cherrygo.IPAddress, ctx context.Context, diags diag.Diagnostics) {
@@ -65,10 +65,10 @@ func (d *ipResourceModel) populateState(ip cherrygo.IPAddress, ctx context.Conte
 	d.Region = types.StringValue(ip.Region.Slug)
 	d.TargetId = types.StringValue(strconv.Itoa(ip.TargetedTo.ID))
 	d.TargetHostname = types.StringValue(ip.TargetedTo.Hostname)
-	d.RouteIPID = types.StringValue(ip.RoutedTo.ID)
+	d.TargetIPID = types.StringValue(ip.RoutedTo.ID)
 	d.DDOSScrubbing = types.BoolValue(ip.DDoSScrubbing)
-	d.ARecordActual = types.StringValue(ip.ARecord)
-	d.PTRRecordActual = types.StringValue(ip.PtrRecord)
+	d.ARecordEffective = types.StringValue(ip.ARecord)
+	d.PTRRecordEffective = types.StringValue(ip.PtrRecord)
 	d.Address = types.StringValue(ip.Address)
 	d.AddressFamily = types.Int64Value(int64(ip.AddressFamily))
 	d.CIDR = types.StringValue(ip.Cidr)
@@ -114,40 +114,40 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 			},
 			"target_id": schema.StringAttribute{
 				Description: "The ID of the server to which the IP is attached." +
-					"Conflicts with target_hostname and route_ip_id.",
+					"Conflicts with target_hostname and target_ip_id.",
 				Optional: true,
 				Computed: true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("target_hostname"),
-						path.MatchRoot("route_ip_id"),
+						path.MatchRoot("target_ip_id"),
 					}...),
 				},
 				PlanModifiers: []planmodifier.String{
 					UseStateIfNoConfigurationChanges(path.Expressions{
 						path.MatchRoot("target_hostname"),
-						path.MatchRoot("route_ip_id"),
+						path.MatchRoot("target_ip_id"),
 					}...),
 				},
 			},
 			"target_hostname": schema.StringAttribute{
 				Description: "The hostname of the server to which the IP is attached." +
-					"Conflicts with target_id and route_ip_id.",
+					"Conflicts with target_id and target_ip_id.",
 				Optional: true,
 				Computed: true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
-						path.MatchRoot("route_ip_id"),
+						path.MatchRoot("target_ip_id"),
 					}...),
 				},
 				PlanModifiers: []planmodifier.String{
 					UseStateIfNoConfigurationChanges(path.Expressions{
 						path.MatchRoot("target_id"),
-						path.MatchRoot("route_ip_id"),
+						path.MatchRoot("target_ip_id"),
 					}...),
 				},
 			},
-			"route_ip_id": schema.StringAttribute{
+			"target_ip_id": schema.StringAttribute{
 				Description: "Subnet or primary-ip type IP ID to route the created IP to." +
 					"Conflicts with target_hostname and target_id.",
 				Optional: true,
@@ -172,7 +172,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.",
 				Optional:    true,
 			},
-			"a_record_actual": schema.StringAttribute{
+			"a_record_effective": schema.StringAttribute{
 				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique." +
 					"API return value.",
 				Computed: true,
@@ -186,7 +186,7 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 				Optional:    true,
 				Description: "Reverse DNS name for the IP address.",
 			},
-			"ptr_record_actual": schema.StringAttribute{
+			"ptr_record_effective": schema.StringAttribute{
 				Description: "Reverse DNS name for the IP address. API return value.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -265,7 +265,7 @@ func (r *ipResource) Create(ctx context.Context, req resource.CreateRequest, res
 		DDoSScrubbing: data.DDOSScrubbing.ValueBool(),
 		PtrRecord:     data.PTRRecord.ValueString(),
 		ARecord:       data.ARecord.ValueString(),
-		RoutedTo:      data.RouteIPID.ValueString(),
+		RoutedTo:      data.TargetIPID.ValueString(),
 	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))
@@ -347,7 +347,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 
 	request := cherrygo.UpdateIPAddress{
 		ARecord:  data.ARecord.ValueString(),
-		RoutedTo: data.RouteIPID.ValueString(),
+		RoutedTo: data.TargetIPID.ValueString(),
 	}
 
 	//The API returns error 500 if update is called with the same ptr_record as before, so check if it has changed.

@@ -26,7 +26,7 @@ func TestAccIPResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "id"),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_id", "0"),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_hostname", ""),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "route_ip_id", ""),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_ip_id", ""),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ddos_scrubbing", "false"),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address_family", regexp.MustCompile(`^[0-9]`)),
@@ -45,12 +45,12 @@ func TestAccIPResource_basic(t *testing.T) {
 			{
 				Config: testAccIPResourceBasicUpdateConfig(projectName, teamId, "eu_nord_1", aRecord),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_actual", aRecord+".cloud.cherryservers.net."),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_actual", "test."),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_effective", aRecord+".cloud.cherryservers.net."),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_effective", "test."),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "tags.env", "test"),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "target_id", regexp.MustCompile(`[0-9]+`)),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "target_hostname", regexp.MustCompile("[a-z]+-[a-z]+")),
-					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "route_ip_id"),
+					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "target_ip_id"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -69,9 +69,9 @@ func TestAccIPResource_fullConfig(t *testing.T) {
 				Config: testAccIPResourceFullConfig(teamId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_actual", "test_tf_full.cloud.cherryservers.net."),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_actual", "test."),
-					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "route_ip_id"),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_effective", "test_tf_full.cloud.cherryservers.net."),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_effective", "test."),
+					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "target_ip_id"),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "target_id", regexp.MustCompile(`[0-9]+`)),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address_family", regexp.MustCompile(`^[0-9]`)),

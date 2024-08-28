@@ -62,16 +62,16 @@ func (d *ipDataSource) Schema(ctx context.Context, req datasource.SchemaRequest,
 			},
 			"target_id": schema.StringAttribute{
 				Description: "The ID of the server to which the IP is attached." +
-					"Conflicts with target_hostname and route_ip_id.",
+					"Conflicts with target_hostname and target_ip_id.",
 				Computed: true,
 			},
 			"target_hostname": schema.StringAttribute{
 				Description: "The hostname of the server to which the IP is attached." +
-					"Conflicts with target_id and route_ip_id.",
+					"Conflicts with target_id and target_ip_id.",
 				Computed: true,
 			},
-			"route_ip_id": schema.StringAttribute{
-				Description: "Subnet or primary-ip type IP ID to route the created IP to." +
+			"target_ip_id": schema.StringAttribute{
+				Description: "Subnet or primary-ip type IP ID to target the created IP to." +
 					"Conflicts with target_hostname and target_id.",
 				Computed: true,
 			},
@@ -83,7 +83,7 @@ func (d *ipDataSource) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.",
 				Computed:    true,
 			},
-			"a_record_actual": schema.StringAttribute{
+			"a_record_effective": schema.StringAttribute{
 				Description: "Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique." +
 					"API return value.",
 				Computed: true,
@@ -92,8 +92,8 @@ func (d *ipDataSource) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Computed:    true,
 				Description: "Reverse DNS name for the IP address.",
 			},
-			"ptr_record_actual": schema.StringAttribute{
-				Description: "Reverse DNS name for the IP address, API return value.",
+			"ptr_record_effective": schema.StringAttribute{
+				Description: "Reverse DNS name for the IP address. API return value.",
 				Computed:    true,
 			},
 			"address": schema.StringAttribute{
