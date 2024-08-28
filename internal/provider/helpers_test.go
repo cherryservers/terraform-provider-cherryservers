@@ -3,6 +3,7 @@ package provider
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"math/rand"
 	"strconv"
 )
 
@@ -21,4 +22,16 @@ func testAccGetResourceIdInt(resourceName string, resourceType string, s *terraf
 	}
 
 	return ID, nil
+}
+
+// generateAlphaString generates a random lowercase alphabetic string
+func generateAlphaString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz"
+
+	aRecord := make([]byte, length)
+	for i := 0; i < length; i++ {
+		aRecord[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(aRecord)
 }

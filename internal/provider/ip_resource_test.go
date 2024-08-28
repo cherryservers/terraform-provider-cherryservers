@@ -13,7 +13,7 @@ import (
 func TestAccIPResource_basic(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	projectName := testProjectNamePrefix + acctest.RandString(5)
-	aRecord := "testtfupdate"
+	aRecord := generateAlphaString(8)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -142,14 +142,14 @@ resource "cherryservers_ip" "test_ip_ip" {
   project_id = "${cherryservers_project.test_ip_project.id}"
   region = "eu_nord_1"
   target_hostname = "${cherryservers_server.test_ip_server.hostname}"
-  a_record = "test_tf_full"
+  a_record = "%s"
   ptr_record = "test"
   tags = {
     env = "test"
   }
 ddos_scrubbing = "true"
 }
-`, testProjectNamePrefix+acctest.RandString(5), teamId)
+`, testProjectNamePrefix+acctest.RandString(5), teamId, generateAlphaString(8))
 }
 
 func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFunc {
