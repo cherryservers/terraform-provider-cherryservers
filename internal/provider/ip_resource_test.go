@@ -61,15 +61,16 @@ func TestAccIPResource_basic(t *testing.T) {
 
 func TestAccIPResource_fullConfig(t *testing.T) {
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
+	aRecord := generateAlphaString(8)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccIPResourceFullConfig(teamId),
+				Config: testAccIPResourceFullConfig(teamId, aRecord),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_effective", "test_tf_full.cloud.cherryservers.net."),
+					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_effective", aRecord+".cloud.cherryservers.net."),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_effective", "test."),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "target_ip_id"),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "target_id", regexp.MustCompile(`[0-9]+`)),
@@ -125,7 +126,7 @@ resource "cherryservers_ip" "test_ip_ip" {
 `, projectName, teamID, region, aRecord)
 }
 
-func testAccIPResourceFullConfig(teamId string) string {
+func testAccIPResourceFullConfig(teamId string, aRecord string) string {
 	return fmt.Sprintf(`
 resource "cherryservers_project" "test_ip_project" {
   name = "%s"
@@ -149,7 +150,7 @@ resource "cherryservers_ip" "test_ip_ip" {
   }
 ddos_scrubbing = "true"
 }
-`, testProjectNamePrefix+acctest.RandString(5), teamId, generateAlphaString(8))
+`, testProjectNamePrefix+acctest.RandString(5), teamId, aRecord)
 }
 
 func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFunc {
