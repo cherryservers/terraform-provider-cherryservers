@@ -1,12 +1,10 @@
-# Get server info by hostname
+# Get server info by ID.
+data "cherryservers_server" "my_server" {
+  id = "123456"
+}
+
+# Get server info yby hostname.
 data "cherryservers_server" "by_hostname" {
-  project_id = "123"
+  project_id = "123456"
   hostname   = "foo-bar"
 }
-
-# Get server info by ID
-data "cherryservers_server" "by_id" {
-  project_id = "123"
-  server_id  = "321"
-}
-
