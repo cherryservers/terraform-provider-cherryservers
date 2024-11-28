@@ -27,7 +27,6 @@ func TestAccIPResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_id", "0"),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_hostname", ""),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_ip_id", ""),
-					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ddos_scrubbing", "false"),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
 					resource.TestMatchResourceAttr("cherryservers_ip.test_ip_ip", "address_family", regexp.MustCompile(`^[0-9]`)),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "cidr"),
@@ -148,7 +147,6 @@ resource "cherryservers_ip" "test_ip_ip" {
   tags = {
     env = "test"
   }
-ddos_scrubbing = "true"
 }
 `, testProjectNamePrefix+acctest.RandString(5), teamId, aRecord)
 }

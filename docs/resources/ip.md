@@ -43,7 +43,6 @@ resource "cherryservers_ip" "floating-1" {
 ### Optional
 
 - `a_record` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.
-- `ddos_scrubbing` (Boolean) If true, DDOS scrubbing protection will be applied in real-time.
 - `ptr_record` (String) Reverse DNS name for the IP address.
 - `tags` (Map of String) Key/value metadata for server tagging.
 - `target_hostname` (String) The hostname of the server to which the IP is attached.Conflicts with target_id and target_ip_id.
