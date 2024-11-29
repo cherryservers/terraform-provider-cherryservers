@@ -40,7 +40,6 @@ data "cherryservers_ip" "by_address" {
 - `a_record_effective` (String) Relative DNS name for the IP address. Resulting FQDN will be '<relative-dns-name>.cloud.cherryservers.net' and must be globally unique.API return value.
 - `address_family` (Number) IP address family IPv4 or IPv6.
 - `cidr` (String) The CIDR block of the IP.
-- `ddos_scrubbing` (Boolean) If true, DDOS scrubbing protection will be applied in real-time.
 - `gateway` (String) The gateway IP address.
 - `ptr_record` (String) Reverse DNS name for the IP address.
 - `ptr_record_effective` (String) Reverse DNS name for the IP address. API return value.

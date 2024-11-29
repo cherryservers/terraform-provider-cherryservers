@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -46,7 +44,6 @@ type ipResourceModel struct {
 	TargetId           types.String `tfsdk:"target_id"`
 	TargetHostname     types.String `tfsdk:"target_hostname"`
 	TargetIPID         types.String `tfsdk:"target_ip_id"`
-	DDOSScrubbing      types.Bool   `tfsdk:"ddos_scrubbing"`
 	ARecord            types.String `tfsdk:"a_record"`
 	ARecordEffective   types.String `tfsdk:"a_record_effective"`
 	PTRRecord          types.String `tfsdk:"ptr_record"`
@@ -66,7 +63,6 @@ func (d *ipResourceModel) populateState(ip cherrygo.IPAddress, ctx context.Conte
 	d.TargetId = types.StringValue(strconv.Itoa(ip.TargetedTo.ID))
 	d.TargetHostname = types.StringValue(ip.TargetedTo.Hostname)
 	d.TargetIPID = types.StringValue(ip.RoutedTo.ID)
-	d.DDOSScrubbing = types.BoolValue(ip.DDoSScrubbing)
 	d.ARecordEffective = types.StringValue(ip.ARecord)
 	d.PTRRecordEffective = types.StringValue(ip.PtrRecord)
 	d.Address = types.StringValue(ip.Address)
@@ -157,15 +153,6 @@ func (r *ipResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 						path.MatchRoot("target_hostname"),
 						path.MatchRoot("target_id"),
 					}...),
-				},
-			},
-			"ddos_scrubbing": schema.BoolAttribute{
-				Description: "If true, DDOS scrubbing protection will be applied in real-time.",
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
 				},
 			},
 			"a_record": schema.StringAttribute{
@@ -261,11 +248,10 @@ func (r *ipResource) Create(ctx context.Context, req resource.CreateRequest, res
 	}
 
 	request := &cherrygo.CreateIPAddress{
-		Region:        data.Region.ValueString(),
-		DDoSScrubbing: data.DDOSScrubbing.ValueBool(),
-		PtrRecord:     data.PTRRecord.ValueString(),
-		ARecord:       data.ARecord.ValueString(),
-		RoutedTo:      data.TargetIPID.ValueString(),
+		Region:    data.Region.ValueString(),
+		PtrRecord: data.PTRRecord.ValueString(),
+		ARecord:   data.ARecord.ValueString(),
+		RoutedTo:  data.TargetIPID.ValueString(),
 	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))
