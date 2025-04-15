@@ -107,7 +107,7 @@ resource "cherryservers_project" "test_ip_project" {
 }
 
 resource "cherryservers_server" "test_ip_server" {
-  plan = "cloud_vps_1"
+  plan = "B1-1-1gb-20s-shared"
   region = "eu_nord_1"
   project_id = "${cherryservers_project.test_ip_project.id}"
 }
@@ -133,7 +133,7 @@ resource "cherryservers_project" "test_ip_project" {
 }
 
 resource "cherryservers_server" "test_ip_server" {
-  plan = "cloud_vps_1"
+  plan = "B1-1-1gb-20s-shared"
   region = "eu_nord_1"
   project_id = "${cherryservers_project.test_ip_project.id}"
 }

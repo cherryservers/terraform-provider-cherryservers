@@ -15,7 +15,7 @@ import (
 func TestAccServerResource_basic(t *testing.T) {
 	serverResourceName := "terraform_test_server_" + acctest.RandString(5)
 	projectName := testProjectNamePrefix + acctest.RandString(5)
-	testPlan := "cloud_vps_1"
+	testPlan := "B1-1-1gb-20s-shared"
 	testRegion := "eu_nord_1"
 	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
 	resource.ParallelTest(t, resource.TestCase{
@@ -215,7 +215,7 @@ resource "cherryservers_ip" "test_server_ip" {
 
 resource "cherryservers_server" "test_server_server" {
   region = "eu_nord_1"
-  plan = "cloud_vps_1"
+  plan = "B1-1-1gb-20s-shared"
   project_id = "${cherryservers_project.test_server_project.id}"
   name = "test"
   hostname = "server-fullconfig-test"
@@ -252,7 +252,7 @@ resource "cherryservers_ip" "test_server_ip" {
 
 resource "cherryservers_server" "test_server_server" {
   region = "eu_nord_1"
-  plan = "cloud_vps_1"
+  plan = "B1-1-1gb-20s-shared"
   project_id = "${cherryservers_project.test_server_project.id}"
   name = "test-reinstall"
   hostname = "server-reinstall-test"
