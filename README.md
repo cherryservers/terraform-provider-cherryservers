@@ -8,8 +8,8 @@
 
 ## Requirements
 
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.8
-- [Go](https://golang.org/doc/install) >= 1.21 (to build the provider plugin)
+- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.10
+- [Go](https://golang.org/doc/install) >= 1.23 (to build the provider plugin)
 
 ## Building The Provider
 
