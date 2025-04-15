@@ -15,31 +15,28 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
       - run: go mod download
       - run: go build -v .
       - name: Run linters
-        uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
+        uses: golangci/golangci-lint-action@v7
         with:
           version: latest
 
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
-      # Temporarily download Terraform 1.8 prerelease for function documentation support.
-      # When Terraform 1.8.0 final is released, this can be removed.
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: '1.8.0-alpha20240216'
           terraform_wrapper: false
       - run: go generate ./...
       - name: git diff
@@ -57,11 +54,11 @@ jobs:
       matrix:
         # list whatever Terraform versions here you would like to support
         terraform:
-          - '1.8.*'
-          - '1.9.*'
+          - '1.10.*'
+          - '1.11.*'
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -76,6 +73,6 @@ jobs:
           CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
         run: go test -v ./internal/provider/ -coverprofile=coverage.txt -parallel=1 -timeout=90m
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
