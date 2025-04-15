@@ -52,20 +52,40 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # list whatever Terraform versions here you would like to support
-        terraform:
-          - '1.10.*'
-          - '1.11.*'
+        include:
+          - tool: opentofu
+            version: v1.9.x
+          - tool: terraform
+            version: v1.10.x
+          - tool: terraform
+            version: v1.11.x
+
     steps:
       - uses: actions/checkout@v4
+
+      - if: matrix.tool == 'terraform'
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ matrix.version }}
+          terraform_wrapper: false
+
+      - if: matrix.tool == 'opentofu'
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ matrix.version }}
+          tofu_wrapper: false
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
-        with:
-          terraform_version: ${{ matrix.terraform }}
-          terraform_wrapper: false
+
+      - if: matrix.tool == 'opentofu'
+        run: |
+          echo TF_ACC_TERRAFORM_PATH="$(which tofu)" >> $GITHUB_ENV
+          echo TF_ACC_PROVIDER_NAMESPACE="hashicorp" >> $GITHUB_ENV
+          echo TF_ACC_PROVIDER_HOST="registry.opentofu.org" >> $GITHUB_ENV
+
       - run: go mod download
       - env:
           TF_ACC: "1"
