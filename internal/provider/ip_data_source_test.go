@@ -64,7 +64,7 @@ resource "cherryservers_project" "test_ip_project" {
 }
 
 resource "cherryservers_ip" "test_ip_ip" {
-  region = "eu_nord_1"
+  region = "LT-Siauliai"
   project_id = "${cherryservers_project.test_ip_project.id}"
 }
 

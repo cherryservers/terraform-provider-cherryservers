@@ -43,7 +43,7 @@ data "cherryservers_ip" "by_address" {
 - `gateway` (String) The gateway IP address.
 - `ptr_record` (String) Reverse DNS name for the IP address.
 - `ptr_record_effective` (String) Reverse DNS name for the IP address. API return value.
-- `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
+- `region` (String) Slug of the region. Example: LT-Siauliai [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 - `tags` (Map of String) Key/value metadata for server tagging.
 - `target_hostname` (String) The hostname of the server to which the IP is attached.Conflicts with target_id and target_ip_id.
 - `target_id` (String) The ID of the server to which the IP is attached.Conflicts with target_hostname and target_ip_id.

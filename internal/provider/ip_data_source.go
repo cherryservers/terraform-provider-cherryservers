@@ -57,7 +57,7 @@ func (d *ipDataSource) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 			},
 			"region": schema.StringAttribute{
-				Description: "Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).",
+				Description: "Slug of the region. Example: LT-Siauliai [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).",
 				Computed:    true,
 			},
 			"target_id": schema.StringAttribute{

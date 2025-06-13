@@ -20,7 +20,7 @@ func TestAccIPResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccIPResourceBasicConfig(projectName, teamId, "eu_nord_1"),
+				Config: testAccIPResourceBasicConfig(projectName, teamId, "LT-Siauliai"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "id"),
@@ -42,7 +42,7 @@ func TestAccIPResource_basic(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccIPResourceBasicUpdateConfig(projectName, teamId, "eu_nord_1", aRecord),
+				Config: testAccIPResourceBasicUpdateConfig(projectName, teamId, "LT-Siauliai", aRecord),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_effective", aRecord+".cloud.cherryservers.net."),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_effective", "test."),
@@ -108,7 +108,7 @@ resource "cherryservers_project" "test_ip_project" {
 
 resource "cherryservers_server" "test_ip_server" {
   plan = "B1-1-1gb-20s-shared"
-  region = "eu_nord_1"
+  region = "LT-Siauliai"
   project_id = "${cherryservers_project.test_ip_project.id}"
 }
 
@@ -134,13 +134,13 @@ resource "cherryservers_project" "test_ip_project" {
 
 resource "cherryservers_server" "test_ip_server" {
   plan = "B1-1-1gb-20s-shared"
-  region = "eu_nord_1"
+  region = "LT-Siauliai"
   project_id = "${cherryservers_project.test_ip_project.id}"
 }
 
 resource "cherryservers_ip" "test_ip_ip" {
   project_id = "${cherryservers_project.test_ip_project.id}"
-  region = "eu_nord_1"
+  region = "LT-Siauliai"
   target_hostname = "${cherryservers_server.test_ip_server.hostname}"
   a_record = "%s"
   ptr_record = "test"
