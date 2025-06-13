@@ -8,7 +8,9 @@
 
 ## Requirements
 
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.10 or compatible [OpenTofu](https://opentofu.org/docs/intro/install/) version.
+- Any non-ancient [Terraform](https://developer.hashicorp.com/terraform/downloads)
+  or [OpenTofu](https://opentofu.org/docs/intro/install/) version should work. We run our tests on the last two major
+  Terraform releases and the last major OpenTofu release.
 - [Go](https://golang.org/doc/install) >= 1.23 (to build the provider plugin)
 
 ## Building The Provider
