@@ -17,7 +17,7 @@ Provides a Cherry Servers server resource. This can be used to create, read, mod
 resource "cherryservers_server" "server" {
   plan       = "B1-1-1gb-20s-shared"
   project_id = 123456
-  region     = "eu_nord_1"
+  region     = "LT-Siauliai"
 }
 
 #Create a new server with options:
@@ -25,7 +25,7 @@ resource "cherryservers_server" "server" {
   plan                   = "B1-1-1gb-20s-shared"
   hostname               = "sharing-wallaby"
   project_id             = 123456
-  region                 = "eu_nord_1"
+  region                 = "LT-Siauliai"
   image                  = "ubuntu_22_04"
   ssh_key_ids            = ["1", "2"]
   extra_ip_addresses_ids = ["8269de5d-9b89-af9a-8bcc-8efb4d9fa282"]
@@ -44,7 +44,7 @@ resource "cherryservers_server" "server" {
 
 - `plan` (String) Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).
 - `project_id` (Number) ID of the project to which the server belongs.
-- `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
+- `region` (String) Slug of the region. Example: LT-Siauliai [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 
 ### Optional
 

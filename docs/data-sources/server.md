@@ -43,7 +43,7 @@ data "cherryservers_server" "by_hostname" {
 - `os_partition_size` (Number) OS partition size in GB.
 - `plan` (String) Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.
-- `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
+- `region` (String) Slug of the region. Example: LT-Siauliai [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
 - `state` (String) The state of the server, such as 'pending' or 'active'.

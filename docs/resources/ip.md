@@ -16,13 +16,13 @@ Provides a CherryServers IP resource. This can be used to create, modify, and de
 # Create a new floating IP address
 resource "cherryservers_ip" "floating-1" {
   project_id = 123456
-  region     = "eu_nord_1"
+  region     = "LT-Siauliai"
 }
 
 # Create a new floating IP address with optional parameters
 resource "cherryservers_ip" "floating-1" {
   project_id      = 123
-  region          = "eu_nord_1"
+  region          = "LT-Siauliai"
   target_hostname = "gentle-turtle"
   ddos_scrubbing  = true
   tags = {
@@ -38,7 +38,7 @@ resource "cherryservers_ip" "floating-1" {
 ### Required
 
 - `project_id` (Number) CherryServers project id, associated with the IP.
-- `region` (String) Slug of the region. Example: eu_nord_1 [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
+- `region` (String) Slug of the region. Example: LT-Siauliai [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 
 ### Optional
 
