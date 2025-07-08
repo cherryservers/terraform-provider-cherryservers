@@ -49,6 +49,7 @@ resource "cherryservers_server" "server" {
 ### Optional
 
 - `allow_reinstall` (Boolean) Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. WARNING: The reinstall will be triggered even if Terraform reports an in-place update.
+- `cycle` (String) Server billing cycle slug. Default is 'hourly.
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
 - `hostname` (String) Hostname of the server.
 - `image` (String) Slug of the server operating system. Updating this attribute requires a server re-install.
