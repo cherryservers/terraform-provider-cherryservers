@@ -64,6 +64,7 @@ type serverResourceModel struct {
 	Id                  types.String   `tfsdk:"id"`
 	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 	AllowReinstall      types.Bool     `tfsdk:"allow_reinstall"`
+	Cycle               types.String   `tfsdk:"cycle"`
 }
 
 func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -334,6 +335,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"cycle": schema.StringAttribute{
+				Optional:    true,
+				Description: "Server billing cycle slug. Default is 'hourly.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"allow_reinstall": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
@@ -375,6 +383,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		Image:        data.Image.ValueString(),
 		Hostname:     data.Hostname.ValueString(),
 		SpotInstance: data.SpotInstance.ValueBool(),
+		Cycle:        data.Cycle.ValueString(),
 	}
 
 	if !data.SSHKeyIds.IsNull() && !data.SSHKeyIds.IsUnknown() {
