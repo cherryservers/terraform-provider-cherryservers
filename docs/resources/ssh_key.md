@@ -46,6 +46,8 @@ resource "cherryservers_ssh_key" "my_ssh_key" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Import existing SSH key via ID
 terraform import cherryservers_ssh_key.main-ssh-key 1234

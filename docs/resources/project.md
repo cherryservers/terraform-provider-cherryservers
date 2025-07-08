@@ -61,6 +61,8 @@ Read-Only:
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Import existing project via its team and project IDs. The format is: <team_id>,<project_id>.
 terraform import cherryservers_project.example 123456,123456

@@ -64,6 +64,8 @@ resource "cherryservers_ip" "floating-1" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Import existing IP address via UUID
 terraform import cherryservers_ip.floating-ip 8269de5d-9b89-af9a-8bcc-8efb4d9fa282
