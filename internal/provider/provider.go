@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"terraform-provider-cherryservers/internal/provider/datasourcebase"
 	"terraform-provider-cherryservers/internal/provider/region"
 )
 
@@ -140,7 +141,8 @@ func (p *CherryServersProvider) DataSources(ctx context.Context) []func() dataso
 		NewServerDataSource,
 		NewIpDataSource,
 		NewSSHKeyDataSource,
-		region.NewRegionDataSource,
+		region.NewSingleDataSource(&datasourcebase.Configurator{}),
+		region.NewListDataSource(&datasourcebase.Configurator{}),
 	}
 }
 
