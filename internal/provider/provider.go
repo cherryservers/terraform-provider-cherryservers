@@ -143,6 +143,8 @@ func (p *CherryServersProvider) DataSources(ctx context.Context) []func() dataso
 		NewSSHKeyDataSource,
 		NewRegionSingleDS(cfg),
 		NewRegionListDS(cfg),
+		NewPlanSingleDS(cfg),
+		NewPlanListDS(cfg),
 	}
 }
 
