@@ -2,9 +2,11 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"math/rand"
+	"regexp"
 	"strconv"
+
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func testAccGetResourceIdInt(resourceName string, resourceType string, s *terraform.State) (int, error) {
@@ -35,3 +37,5 @@ func generateAlphaString(length int) string {
 
 	return string(aRecord)
 }
+
+var ipv4Regex = regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)
