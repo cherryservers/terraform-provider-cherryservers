@@ -3,10 +3,11 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -18,8 +19,10 @@ import (
 )
 
 // Ensure CherryServersProvider satisfies various provider interfaces.
-var _ provider.Provider = &CherryServersProvider{}
-var _ provider.ProviderWithFunctions = &CherryServersProvider{}
+var (
+	_ provider.Provider              = &CherryServersProvider{}
+	_ provider.ProviderWithFunctions = &CherryServersProvider{}
+)
 
 // CherryServersProvider defines the provider implementation.
 type CherryServersProvider struct {
@@ -145,6 +148,7 @@ func (p *CherryServersProvider) DataSources(ctx context.Context) []func() dataso
 		NewRegionListDS(cfg),
 		NewPlanSingleDS(cfg),
 		NewPlanListDS(cfg),
+		NewCycleListDS(cfg),
 	}
 }
 
