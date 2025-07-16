@@ -87,7 +87,7 @@ func (d *cycleListDS) Schema(ctx context.Context, req datasource.SchemaRequest, 
 						},
 						"slug": schema.StringAttribute{
 							Computed:    true,
-							Description: "Used when provisioning resources.",
+							Description: "A more readable substitute for id.",
 						},
 					},
 				},

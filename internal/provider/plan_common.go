@@ -404,7 +404,7 @@ var softwaresAttr = schema.ListNestedAttribute{
 					},
 					"slug": schema.StringAttribute{
 						Computed:    true,
-						Description: "Image slug. Used when provisioning a server.",
+						Description: "Used as identifier for the image in requests.",
 					},
 				},
 			},
@@ -571,7 +571,7 @@ var regionsAttr = schema.ListNestedAttribute{
 			},
 			"slug": schema.StringAttribute{
 				Computed:    true,
-				Description: "Used when provisioning resources.",
+				Description: "A more readable substitute for id.",
 			},
 			"bgp": bgpAttr,
 			"location": schema.StringAttribute{
@@ -597,7 +597,7 @@ func planAttr(readOnly bool) map[string]schema.Attribute {
 		"slug": schema.StringAttribute{
 			Computed:    true,
 			Optional:    !readOnly,
-			Description: "Used when provisioning a server.",
+			Description: "A more readable substitute for id.",
 		},
 		"type": schema.StringAttribute{
 			Computed:    true,
