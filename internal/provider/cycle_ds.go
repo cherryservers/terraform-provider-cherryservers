@@ -108,7 +108,7 @@ func (d *cycleListDS) Read(ctx context.Context, req datasource.ReadRequest, resp
 		return
 	}
 
-	cycles, _, err := d.configurator.Client().Servers.ListCycles(nil)
+	cycles, _, err := d.Client().Servers.ListCycles(nil)
 	if err != nil {
 		resp.Diagnostics.AddError("cycle list failed", err.Error())
 		return

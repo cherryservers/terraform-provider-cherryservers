@@ -12,7 +12,6 @@ type Configurator struct {
 	client *cherrygo.Client
 }
 
-
 func (c *Configurator) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {

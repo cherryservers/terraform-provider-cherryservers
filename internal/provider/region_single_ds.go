@@ -61,7 +61,7 @@ func (d *regionSingleDS) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	region, _, err := d.configurator.Client().Regions.Get(id, nil)
+	region, _, err := d.Client().Regions.Get(id, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("region read failed", err.Error())
 		return

@@ -78,7 +78,7 @@ func (d *regionListDS) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 
-	regions, _, err := d.configurator.Client().Regions.List(nil)
+	regions, _, err := d.Client().Regions.List(nil)
 	if err != nil {
 		resp.Diagnostics.AddError("regions list failed", err.Error())
 		return

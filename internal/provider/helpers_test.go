@@ -43,12 +43,12 @@ func generateAlphaString(length int) string {
 var ipv4Regex = regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)
 
 func findPlanIndex(id int, client *cherrygo.Client) (int, error) {
-	plans, _, err :=  client.Plans.List(0, nil)
+	plans, _, err := client.Plans.List(0, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	for i, v := range plans{
+	for i, v := range plans {
 		if v.ID == id {
 			return i, nil
 		}

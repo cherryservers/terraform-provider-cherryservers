@@ -62,9 +62,9 @@ func (d *planSingleDS) Read(ctx context.Context, req datasource.ReadRequest, res
 	var plan cherrygo.Plan
 	var err error = nil
 	if slug != "" {
-		plan, _, err = d.configurator.Client().Plans.GetBySlug(slug, nil)
+		plan, _, err = d.Client().Plans.GetBySlug(slug, nil)
 	} else {
-		plan, _, err = d.configurator.Client().Plans.GetByID(int(id), nil)
+		plan, _, err = d.Client().Plans.GetByID(int(id), nil)
 	}
 
 	if err != nil {

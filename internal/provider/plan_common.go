@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// imageModel corresponds to the inner "image" object under softwares
+// imageModel corresponds to the inner "image" object under softwares.
 type imageModel struct {
 	Name types.String `tfsdk:"name"`
 	Slug types.String `tfsdk:"slug"`
@@ -23,7 +23,7 @@ func imageAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// softwareModel wraps the imageModel
+// softwareModel wraps the imageModel.
 type softwareModel struct {
 	Image types.Object `tfsdk:"image"`
 }
@@ -34,7 +34,7 @@ func softwareAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// cpusModel for the "cpus" block under specs
+// cpusModel for the "cpus" block under specs.
 type cpusModel struct {
 	Count     types.Int64   `tfsdk:"count"`
 	Name      types.String  `tfsdk:"name"`
@@ -53,7 +53,7 @@ func cpusAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// memoryModel for the "memory" block under specs
+// memoryModel for the "memory" block under specs.
 type memoryModel struct {
 	Count types.Int64  `tfsdk:"count"`
 	Total types.Int64  `tfsdk:"total"`
@@ -70,7 +70,7 @@ func memoryAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// storageModel for each element in the "storage" list under specs
+// storageModel for each element in the "storage" list under specs.
 type storageModel struct {
 	Count types.Int64  `tfsdk:"count"`
 	Name  types.String `tfsdk:"name"`
@@ -87,7 +87,7 @@ func storageAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// nicsModel for the "nics" block under specs
+// nicsModel for the "nics" block under specs.
 type nicsModel struct {
 	Name types.String `tfsdk:"name"`
 }
@@ -98,7 +98,7 @@ func nicsAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// bandwidthModel for the "bandwidth" block under specs
+// bandwidthModel for the "bandwidth" block under specs.
 type bandwidthModel struct {
 	Name types.String `tfsdk:"name"`
 }
@@ -109,7 +109,7 @@ func bandwidthAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// specsModel wraps all nested specs
+// specsModel wraps all nested specs.
 type specsModel struct {
 	CPUs      types.Object `tfsdk:"cpus"`
 	Memory    types.Object `tfsdk:"memory"`
@@ -128,7 +128,7 @@ func specsAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// pricingModel for each element in the "pricing" list
+// pricingModel for each element in the "pricing" list.
 type pricingModel struct {
 	Unit     types.String  `tfsdk:"unit"`
 	Price    types.Float64 `tfsdk:"price"`
@@ -143,7 +143,7 @@ func pricingAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// planRegionModel for each element in the "available_regions" list
+// planRegionModel for each element in the "available_regions" list.
 type planRegionModel struct {
 	ID         types.Int64  `tfsdk:"id"`
 	Name       types.String `tfsdk:"name"`
@@ -195,7 +195,7 @@ func planAttributeTypes() map[string]attr.Type {
 
 func expandSoftwares(ctx context.Context, softwares []cherrygo.SoftwareImage) (types.List, diag.Diagnostics) {
 	diagsCap := len(softwares)*2 + 1
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, diagsCap)
+	var diags = make(diag.Diagnostics, 0, diagsCap)
 	swObjs := make([]types.Object, len(softwares))
 
 	for i, v := range softwares {
@@ -217,7 +217,7 @@ func expandSoftwares(ctx context.Context, softwares []cherrygo.SoftwareImage) (t
 
 func expandPricings(ctx context.Context, pricings []cherrygo.Pricing) (types.List, diag.Diagnostics) {
 	diagsCap := len(pricings) + 1
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, diagsCap)
+	var diags = make(diag.Diagnostics, 0, diagsCap)
 	objs := make([]types.Object, len(pricings))
 
 	for i, v := range pricings {
@@ -239,7 +239,7 @@ func expandPricings(ctx context.Context, pricings []cherrygo.Pricing) (types.Lis
 
 func expandStorage(ctx context.Context, storages []cherrygo.Storage) (types.List, diag.Diagnostics) {
 	diagsCap := len(storages) + 1
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, diagsCap)
+	var diags = make(diag.Diagnostics, 0, diagsCap)
 	objs := make([]types.Object, len(storages))
 
 	for i, v := range storages {
@@ -262,7 +262,7 @@ func expandStorage(ctx context.Context, storages []cherrygo.Storage) (types.List
 
 func expandSpecs(ctx context.Context, specs cherrygo.Specs) (types.Object, diag.Diagnostics) {
 	diagsCap := len(specs.Storage) + 5 // Number of object type elements in specs, plus length of 'storage'.
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, diagsCap)
+	var diags = make(diag.Diagnostics, 0, diagsCap)
 
 	cpu := cpusModel{
 		Count:     types.Int64Value(int64(specs.Cpus.Count)),
@@ -306,7 +306,7 @@ func expandSpecs(ctx context.Context, specs cherrygo.Specs) (types.Object, diag.
 
 func expandBGP(ctx context.Context, bgp cherrygo.RegionBGP) (types.Object, diag.Diagnostics) {
 	diagsCap := 2
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, diagsCap)
+	var diags = make(diag.Diagnostics, 0, diagsCap)
 
 	hosts, d := types.ListValueFrom(ctx, types.StringType, bgp.Hosts)
 	diags.Append(d...)
@@ -322,7 +322,7 @@ func expandBGP(ctx context.Context, bgp cherrygo.RegionBGP) (types.Object, diag.
 
 func expandRegions(ctx context.Context, ar []cherrygo.AvailableRegions) (types.List, diag.Diagnostics) {
 	diagsCap := len(ar)*3 + 1
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, diagsCap)
+	var diags = make(diag.Diagnostics, 0, diagsCap)
 	objs := make([]types.Object, len(ar))
 
 	for i, v := range ar {

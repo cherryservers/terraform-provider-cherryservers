@@ -33,7 +33,7 @@ type planListModel struct {
 
 func (m *planListModel) populateState(ctx context.Context, plans []cherrygo.Plan) diag.Diagnostics {
 	planModels := make([]planModel, len(plans), cap(plans))
-	var diags diag.Diagnostics = make(diag.Diagnostics, 0, cap(plans))
+	var diags = make(diag.Diagnostics, 0, cap(plans))
 
 	for i, v := range plans {
 		diags.Append(planModels[i].populateState(ctx, v)...)
@@ -81,7 +81,7 @@ func (d *planListDS) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	plans, _, err := d.configurator.Client().Plans.List(null_team_id, nil)
+	plans, _, err := d.Client().Plans.List(null_team_id, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("plan list failed", err.Error())
 		return
