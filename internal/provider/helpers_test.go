@@ -1,10 +1,14 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"math/rand"
+	"regexp"
 	"strconv"
+
+	"github.com/cherryservers/cherrygo/v3"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func testAccGetResourceIdInt(resourceName string, resourceType string, s *terraform.State) (int, error) {
@@ -34,4 +38,21 @@ func generateAlphaString(length int) string {
 	}
 
 	return string(aRecord)
+}
+
+var ipv4Regex = regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)
+
+func findPlanIndex(id int, client *cherrygo.Client) (int, error) {
+	plans, _, err := client.Plans.List(0, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	for i, v := range plans {
+		if v.ID == id {
+			return i, nil
+		}
+	}
+
+	return 0, errors.New("plan index not found")
 }

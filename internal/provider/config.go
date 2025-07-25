@@ -1,8 +1,11 @@
 package provider
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/cherryservers/cherrygo/v3"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -17,4 +20,9 @@ func DefaultClientConfigure(req resource.ConfigureRequest, resp *resource.Config
 	}
 
 	return client
+}
+
+type configurator interface {
+	Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse)
+	Client() *cherrygo.Client
 }
