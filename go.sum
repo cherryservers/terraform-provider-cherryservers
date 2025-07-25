@@ -29,8 +29,8 @@ github.com/bufbuild/protocompile v0.4.0 h1:LbFKd2XowZvQ/kajzguUp2DC9UEIQhIq77fZZ
 github.com/bufbuild/protocompile v0.4.0/go.mod h1:3v93+mbWn/v3xzN+31nwkJfrEpAUwp+BagBSZWx+TP8=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
-github.com/cherryservers/cherrygo/v3 v3.7.0 h1:V3a0IN2DrxNgbGEHaRZrecyjHSrz6SEsEmTpxbje+c4=
-github.com/cherryservers/cherrygo/v3 v3.7.0/go.mod h1:WGUUGt23Ho6wngdOogZ8okd4Er77twDVgR5yBxa9TXM=
+github.com/cherryservers/cherrygo/v3 v3.8.0 h1:PtveZ7PnboqbgUAditvigWV9siqxzib2/pyh9XjwC2Q=
+github.com/cherryservers/cherrygo/v3 v3.8.0/go.mod h1:WGUUGt23Ho6wngdOogZ8okd4Er77twDVgR5yBxa9TXM=
 github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
 github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
 github.com/cyphar/filepath-securejoin v0.4.1 h1:JyxxyPEaktOD+GAnqIqTf9A8tHyAG22rowi7HkoSU1s=
