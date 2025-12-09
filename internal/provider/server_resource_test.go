@@ -37,6 +37,8 @@ func TestAccServerResource_basic(t *testing.T) {
 					resource.TestMatchResourceAttr("cherryservers_server."+serverResourceName, "project_id", regexp.MustCompile(`[0-9]+`)),
 					resource.TestCheckResourceAttr("cherryservers_server."+serverResourceName, "spot_instance", "false"),
 					resource.TestCheckResourceAttr("cherryservers_server."+serverResourceName, "state", "active"),
+					resource.TestMatchResourceAttr("cherryservers_server."+serverResourceName, "pricing.price", regexp.MustCompile(`[+-]?([0-9]*[.])?[0-9]+`)),
+					resource.TestCheckResourceAttr("cherryservers_server."+serverResourceName, "pricing.currency", "EUR"),
 				),
 			},
 			// ImportState testing

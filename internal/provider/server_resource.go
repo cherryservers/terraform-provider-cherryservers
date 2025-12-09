@@ -67,6 +67,19 @@ type serverResourceModel struct {
 	AllowReinstall      types.Bool     `tfsdk:"allow_reinstall"`
 	Cycle               types.String   `tfsdk:"cycle"`
 	DiscountCode        types.String   `tfsdk:"discount_code"`
+	Pricing             types.Object   `tfsdk:"pricing"`
+}
+
+type serverPricingModel struct {
+	Price    types.Float32 `tfsdk:"price"`
+	Currency types.String  `tfsdk:"currency"`
+}
+
+func (m serverPricingModel) AttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"price":    types.Float32Type,
+		"currency": types.StringType,
+	}
 }
 
 func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -116,6 +129,16 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 	d.PowerState = types.StringValue(powerState)
 	d.State = types.StringValue(server.State)
 	d.Id = types.StringValue(strconv.Itoa(server.ID))
+
+	pricing := serverPricingModel{
+		Price:    types.Float32Value(server.Pricing.UnitPrice),
+		Currency: types.StringValue(server.Pricing.Currency),
+	}
+
+	pricingTf, pricingDiags := types.ObjectValueFrom(ctx, pricing.AttributeTypes(), pricing)
+
+	d.Pricing = pricingTf
+	diags.Append(pricingDiags...)
 }
 
 type ipAddressFlatResourceModel struct {
@@ -349,6 +372,20 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Description: "Server discount code.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"pricing": schema.SingleNestedAttribute{
+				Description: "Server pricing data.",
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"price": schema.Float32Attribute{
+						Computed:    true,
+						Description: "Server price.",
+					},
+					"currency": schema.StringAttribute{
+						Computed:    true,
+						Description: "Pricing currency.",
+					},
 				},
 			},
 			"allow_reinstall": schema.BoolAttribute{

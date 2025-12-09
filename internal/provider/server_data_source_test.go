@@ -36,6 +36,8 @@ func TestAccServerDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceName, "power_state", resourceName, "power_state"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "state", resourceName, "state"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "ip_addresses", resourceName, "ip_addresses"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "pricing.price", resourceName, "pricing.price"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "pricing.currency", resourceName, "pricing.currency"),
 					//Check by hostname.
 					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "plan", resourceName, "plan"),
 					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "project_id", resourceName, "project_id"),
@@ -50,6 +52,8 @@ func TestAccServerDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "power_state", resourceName, "power_state"),
 					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "state", resourceName, "state"),
 					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "ip_addresses", resourceName, "ip_addresses"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "pricing.price", resourceName, "pricing.price"),
+					resource.TestCheckResourceAttrPair("data.cherryservers_server.test_server_server_by_hostname", "pricing.currency", resourceName, "pricing.currency"),
 				),
 			},
 		},

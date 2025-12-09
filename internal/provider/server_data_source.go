@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
@@ -12,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"strconv"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -46,6 +47,7 @@ type serverDataSourceModel struct {
 	State           types.String   `tfsdk:"state"`
 	IpAddresses     types.Set      `tfsdk:"ip_addresses"`
 	Id              types.String   `tfsdk:"id"`
+	Pricing         types.Object   `tfsdk:"pricing"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -67,7 +69,7 @@ func (d *serverDataSourceModel) populateModel(server cherrygo.Server, ctx contex
 	d.State = resourceModel.State
 	d.IpAddresses = resourceModel.IpAddresses
 	d.Id = resourceModel.Id
-
+	d.Pricing = resourceModel.Pricing
 }
 
 func (d *serverDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -164,6 +166,20 @@ func (d *serverDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							Description: "CIDR of the IP address.",
 							Computed:    true,
 						},
+					},
+				},
+			},
+			"pricing": schema.SingleNestedAttribute{
+				Description: "Server pricing data.",
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"price": schema.Float32Attribute{
+						Computed:    true,
+						Description: "Price for the server.",
+					},
+					"currency": schema.StringAttribute{
+						Computed:    true,
+						Description: "Pricing currency.",
 					},
 				},
 			},

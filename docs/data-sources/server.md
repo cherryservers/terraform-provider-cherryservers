@@ -43,6 +43,7 @@ data "cherryservers_server" "by_hostname" {
 - `os_partition_size` (Number) OS partition size in GB.
 - `plan` (String) Slug of the plan. Example: e5_1620v4. [See List Plans](https://api.cherryservers.com/doc/#tag/Plans/operation/get-plans).
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.
+- `pricing` (Attributes) Server pricing data. (see [below for nested schema](#nestedatt--pricing))
 - `region` (String) Slug of the region. Example: LT-Siauliai [See List Regions](https://api.cherryservers.com/doc/#tag/Regions/operation/get-regions).
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server.
@@ -67,3 +68,12 @@ Read-Only:
 - `cidr` (String) CIDR of the IP address.
 - `id` (String) ID of the IP address.
 - `type` (String) Type of the IP address.
+
+
+<a id="nestedatt--pricing"></a>
+### Nested Schema for `pricing`
+
+Read-Only:
+
+- `currency` (String) Pricing currency.
+- `price` (Number) Price for the server.

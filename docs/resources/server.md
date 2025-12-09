@@ -68,6 +68,7 @@ resource "cherryservers_server" "server" {
 - `id` (String) Server identifier.
 - `ip_addresses` (Attributes Set) IP addresses attached to the server. (see [below for nested schema](#nestedatt--ip_addresses))
 - `power_state` (String) The power state of the server, such as 'Powered off' or 'Powered on'.
+- `pricing` (Attributes) Server pricing data. (see [below for nested schema](#nestedatt--pricing))
 - `state` (String) The state of the server, such as 'pending' or 'active'.
 
 <a id="nestedatt--timeouts"></a>
@@ -89,6 +90,15 @@ Read-Only:
 - `cidr` (String) CIDR of the IP address.
 - `id` (String) ID of the IP address.
 - `type` (String) Type of the IP address.
+
+
+<a id="nestedatt--pricing"></a>
+### Nested Schema for `pricing`
+
+Read-Only:
+
+- `currency` (String) Pricing currency.
+- `price` (Number) Server price.
 
 ## Import
 
