@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -23,8 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"strconv"
-	"time"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -65,6 +66,7 @@ type serverResourceModel struct {
 	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 	AllowReinstall      types.Bool     `tfsdk:"allow_reinstall"`
 	Cycle               types.String   `tfsdk:"cycle"`
+	DiscountCode        types.String   `tfsdk:"discount_code"`
 }
 
 func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.Context, diags diag.Diagnostics, powerState string) {
@@ -342,6 +344,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"discount_code": schema.StringAttribute{
+				Optional:    true,
+				Description: "Server discount code.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"allow_reinstall": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
@@ -384,6 +393,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		Hostname:     data.Hostname.ValueString(),
 		SpotInstance: data.SpotInstance.ValueBool(),
 		Cycle:        data.Cycle.ValueString(),
+		DiscountCode: data.DiscountCode.ValueString(),
 	}
 
 	if !data.SSHKeyIds.IsNull() && !data.SSHKeyIds.IsUnknown() {
@@ -463,7 +473,6 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 			}
 
 			return backoff.Permanent(errors.New("failed to deploy server"))
-
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(createTimeout),
 			backoff.WithInitialInterval(time.Second*10)))
@@ -478,7 +487,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	//Workaround for not being able to set BGP and Name on "Request a server" request in API
+	// Workaround for not being able to set BGP and Name on "Request a server" request in API
 	updateRequest := cherrygo.UpdateServer{
 		Name: data.Name.ValueString(),
 	}
@@ -696,7 +705,6 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 			}
 
 			return backoff.Permanent(errors.New("server is in unknown status"))
-
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(updateTimeout),
 			backoff.WithInitialInterval(time.Second*10)))
@@ -728,7 +736,6 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	ctx = tflog.SetField(ctx, "server_id", data.Id)
 	tflog.Trace(ctx, "deleted a resource")
-
 }
 
 func (r *serverResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
