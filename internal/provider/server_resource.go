@@ -682,7 +682,13 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel, resp *resource.UpdateResponse) {
-	password := generatePassword()
+	password, err := generatePassword()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"unable to generate password", err.Error(),
+		)
+		return
+	}
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
 
 	requestReinstall := &cherrygo.ReinstallServerFields{
