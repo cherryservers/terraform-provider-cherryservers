@@ -1,12 +1,14 @@
 package provider
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
-	"math/rand"
+	"math/big"
 	"strings"
+
+	"github.com/cherryservers/cherrygo/v3"
 )
 
 // is404Error returns true if err is an HTTP 404 error.
@@ -58,21 +60,37 @@ func normalizeServerImage(server *cherrygo.Server, client *cherrygo.Client) erro
 }
 
 // generatePassword is used to generate a password that matches CherryServers password constraints.
-func generatePassword() string {
+func generatePassword() (string, error) {
 	const (
-		lowercaseLetters = "abcdefghijklmnopqrstuvwxyz"
-		uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		digits           = "0123456789"
-		all              = lowercaseLetters + uppercaseLetters + digits
+		lowercase = "abcdefghijklmnopqrstuvwxyz"
+		uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		digits    = "0123456789"
+		all       = lowercase + uppercase + digits
+		length    = 20
 	)
+	password := make([]byte, length)
 
-	password := make([]byte, 16)
-	password[0] = lowercaseLetters[rand.Intn(len(lowercaseLetters))]
-	password[1] = uppercaseLetters[rand.Intn(len(uppercaseLetters))]
-	password[2] = digits[rand.Intn(len(digits))]
-	for i := 3; i < 16; i++ {
-		password[i] = all[rand.Intn(len(all))]
+	var charset string
+	for i := range length {
+		switch i {
+		case 0:
+			// Ensure there is at least one lower-case alphabetical character.
+			charset = lowercase
+		case 1:
+			// Ensure there is at least one upper-case alphabetical
+			// character that is not first.
+			charset = uppercase
+		case 2:
+			// Ensure there is at least one digit that is not last.
+			charset = digits
+		default:
+			charset = all
+		}
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", err
+		}
+		password[i] = charset[idx.Int64()]
 	}
-
-	return string(password)
+	return string(password), nil
 }
