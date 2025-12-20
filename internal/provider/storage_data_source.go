@@ -41,7 +41,6 @@ type StorageDataSourceModel struct {
 	AllowEditSize types.Bool `tfsdk:"allow_edit_size"`
 	Unit types.String `tfsdk:"unit"`
 	AttachedTo types.Int64 `tfsdk:"attached_to"`
-	CreatedAt types.String `tfsdk:"created_at"`
 }
 
 // Metadata returns the data source type name.
@@ -106,10 +105,6 @@ func (d *StorageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Description: "Server ID if storage is attached.",
 				Computed:    true,
 			},
-			"created_at": schema.StringAttribute{
-				Description: "Creation timestamp.",
-				Computed:    true,
-			},
 		},
 	}
 }
@@ -160,7 +155,6 @@ func (d *StorageDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	config.AllowEditSize = types.BoolValue(storage.AllowEditSize)
 	config.Unit = types.StringValue(storage.Unit)
 	config.Region = types.StringValue(storage.Region.Slug)
-	config.CreatedAt = types.StringValue(storage.CreatedAt)
 
 	if storage.AttachedTo.ID != 0 {
 		config.AttachedTo = types.Int64Value(int64(storage.AttachedTo.ID))
