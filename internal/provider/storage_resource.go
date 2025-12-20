@@ -73,7 +73,7 @@ func (d *storageResourceModel) populateState(storage cherrygo.BlockStorage, ctx 
 	d.DiscoveryIp = types.StringValue(storage.DiscoveryIP)
 	d.AllowEditSize = types.BoolValue(storage.AllowEditSize)
 	d.Unit = types.StringValue(storage.Unit)
-	d.CreatedAt = types.StringValue(storage.Region.Name) // Using Region Name as placeholder for CreatedAt if not available
+	d.CreatedAt = types.StringValue(storage.CreatedAt)
 	d.Region = types.StringValue(storage.Region.Slug)
 
 	if storage.AttachedTo.ID != 0 {
