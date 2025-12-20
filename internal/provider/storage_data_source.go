@@ -160,7 +160,7 @@ func (d *StorageDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	config.AllowEditSize = types.BoolValue(storage.AllowEditSize)
 	config.Unit = types.StringValue(storage.Unit)
 	config.Region = types.StringValue(storage.Region.Slug)
-	config.CreatedAt = types.StringValue(storage.Region.Name)
+	config.CreatedAt = types.StringValue(storage.CreatedAt)
 
 	if storage.AttachedTo.ID != 0 {
 		config.AttachedTo = types.Int64Value(int64(storage.AttachedTo.ID))
