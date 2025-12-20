@@ -29,11 +29,12 @@ func TestAccStorageResource(t *testing.T) {
 					// iSCSI details are only populated after attachment, so skip checking them here
 				),
 			},
-			// ImportState testing
+			// ImportState testing - skip project_id verification since API doesn't return it
 			{
-				ResourceName:      "cherryservers_storage." + storageResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "cherryservers_storage." + storageResourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"project_id"},
 			},
 			// Update description
 			{
