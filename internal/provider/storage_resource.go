@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -398,6 +399,16 @@ func (r *storageResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 // ImportState imports the resource into Terraform state.
 func (r *storageResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Use the ID passed in as the storage_id
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	// Parse the ID as int64
+	id, err := strconv.ParseInt(req.ID, 10, 64)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Storage ID",
+			fmt.Sprintf("Could not parse storage ID as integer: %s", err.Error()),
+		)
+		return
+	}
+
+	// Set the ID in state
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
