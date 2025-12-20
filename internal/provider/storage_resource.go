@@ -58,7 +58,6 @@ type storageResourceModel struct {
 	// Computed (metadata)
 	AllowEditSize types.Bool `tfsdk:"allow_edit_size"`
 	Unit types.String `tfsdk:"unit"`
-	CreatedAt types.String `tfsdk:"created_at"`
 }
 
 // populateState fills the model with API response data.
@@ -73,7 +72,6 @@ func (d *storageResourceModel) populateState(storage cherrygo.BlockStorage, ctx 
 	d.DiscoveryIp = types.StringValue(storage.DiscoveryIP)
 	d.AllowEditSize = types.BoolValue(storage.AllowEditSize)
 	d.Unit = types.StringValue(storage.Unit)
-	d.CreatedAt = types.StringValue(storage.CreatedAt)
 	d.Region = types.StringValue(storage.Region.Slug)
 
 	if storage.AttachedTo.ID != 0 {
@@ -176,13 +174,6 @@ func (r *storageResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"unit": schema.StringAttribute{
 				Description: "Unit type for storage (typically 'GB').",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"created_at": schema.StringAttribute{
-				Description: "Timestamp when the storage was created.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
