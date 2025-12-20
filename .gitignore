@@ -33,3 +33,18 @@ website/vendor
 
 # Keep windows files with windows line endings
 *.winfile eol=crlf
+.env
+
+# Terraform security files
+terraform.tfvars
+.terraformrc
+*.tfvars
+!*.tfvars.example
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
