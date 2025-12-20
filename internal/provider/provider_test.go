@@ -3,15 +3,11 @@ package provider
 import (
 	"fmt"
 	"github.com/cherryservers/cherrygo/v3"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
-
-// Test name prefix for resources
-const testProjectNamePrefix = "terraform-test-"
 
 var testCherryGoClient *cherrygo.Client
 
@@ -21,26 +17,6 @@ var testCherryGoClient *cherrygo.Client
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"cherryservers": providerserver.NewProtocol6WithError(New("test")()),
-}
-
-// sharedClient creates and returns a shared client for acceptance testing.
-// It reads the API token from CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables.
-func sharedClient() (interface{}, error) {
-	apiToken := os.Getenv("CHERRY_AUTH_TOKEN")
-	if apiToken == "" {
-		apiToken = os.Getenv("CHERRY_AUTH_KEY")
-	}
-
-	if apiToken == "" {
-		return nil, fmt.Errorf("CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variable not set")
-	}
-
-	client, err := cherrygo.NewClient(cherrygo.WithAuthToken(apiToken))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cherrygo client: %w", err)
-	}
-
-	return client, nil
 }
 
 func testAccPreCheck(t *testing.T) {
