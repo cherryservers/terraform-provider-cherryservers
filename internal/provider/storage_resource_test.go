@@ -2,41 +2,47 @@ package provider
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccStorageResource(t *testing.T) {
+	storageResourceName := "terraform_test_storage_" + acctest.RandString(5)
+	projectName := testProjectNamePrefix + acctest.RandString(5)
+	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccStorageResourceConfig("test"),
+				Config: testAccStorageResourceConfig(projectName, storageResourceName, teamID),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("cherryservers_storage.test", "id"),
-					resource.TestCheckResourceAttr("cherryservers_storage.test", "size", "10"),
-					resource.TestCheckResourceAttr("cherryservers_storage.test", "region", "LT-Siauliai"),
-					resource.TestCheckResourceAttr("cherryservers_storage.test", "description", "Test storage"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage.test", "vlan_id"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage.test", "vlan_ip"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage.test", "initiator"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage.test", "discovery_ip"),
+					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "id"),
+					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "size", "10"),
+					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "region", "LT-Siauliai"),
+					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "description", "Test storage"),
+					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "vlan_id"),
+					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "vlan_ip"),
+					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "initiator"),
+					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "discovery_ip"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "cherryservers_storage.test",
+				ResourceName:      "cherryservers_storage." + storageResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Update description
 			{
-				Config: testAccStorageResourceConfig("updated"),
+				Config: testAccStorageResourceConfigUpdate(projectName, storageResourceName, teamID),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cherryservers_storage.test", "description", "Updated storage"),
+					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "description", "Updated storage"),
 				),
 			},
 			// Delete testing automatically occurs after the last TestStep
@@ -44,16 +50,34 @@ func TestAccStorageResource(t *testing.T) {
 	})
 }
 
-func testAccStorageResourceConfig(name string) string {
+func testAccStorageResourceConfig(projectName string, storageName string, teamID string) string {
 	return fmt.Sprintf(`
-data "cherryservers_project" "main" {
+resource "cherryservers_project" "test_storage_project" {
+  name = "%s"
+  team_id = "%s"
 }
 
-resource "cherryservers_storage" "test" {
-  project_id  = data.cherryservers_project.main.id
+resource "cherryservers_storage" "%s" {
+  project_id  = cherryservers_project.test_storage_project.id
   region      = "LT-Siauliai"
   size        = 10
-  description = "%s storage"
+  description = "Test storage"
 }
-`, name)
+`, projectName, teamID, storageName)
+}
+
+func testAccStorageResourceConfigUpdate(projectName string, storageName string, teamID string) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_storage_project" {
+  name = "%s"
+  team_id = "%s"
+}
+
+resource "cherryservers_storage" "%s" {
+  project_id  = cherryservers_project.test_storage_project.id
+  region      = "LT-Siauliai"
+  size        = 10
+  description = "Updated storage"
+}
+`, projectName, teamID, storageName)
 }
