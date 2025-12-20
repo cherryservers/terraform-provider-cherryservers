@@ -228,8 +228,8 @@ func (r *storageResource) Create(ctx context.Context, req resource.CreateRequest
 
 	tflog.Trace(ctx, "created storage", map[string]any{"storage_id": storage.ID})
 
-	// Attach to server if specified
-	if !data.AttachedTo.IsNull() {
+	// Attach to server if specified (only if attached_to is not null)
+	if !data.AttachedTo.IsNull() && !data.AttachedTo.IsUnknown() {
 		attachReq := &cherrygo.AttachTo{
 			StorageID: storage.ID,
 			AttachTo:  int(data.AttachedTo.ValueInt64()),
@@ -239,6 +239,7 @@ func (r *storageResource) Create(ctx context.Context, req resource.CreateRequest
 			resp.Diagnostics.AddError("unable to attach storage to server", err.Error())
 			return
 		}
+		tflog.Trace(ctx, "attached storage", map[string]any{"storage_id": storage.ID, "server_id": data.AttachedTo.ValueInt64()})
 	}
 
 	// Refresh to get all computed fields
@@ -313,8 +314,8 @@ func (r *storageResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Handle attach/detach
-	stateAttached := !stateData.AttachedTo.IsNull()
-	dataAttached := !data.AttachedTo.IsNull()
+	stateAttached := !stateData.AttachedTo.IsNull() && !stateData.AttachedTo.IsUnknown()
+	dataAttached := !data.AttachedTo.IsNull() && !data.AttachedTo.IsUnknown()
 
 	if dataAttached && !stateAttached {
 		// Attach to server
@@ -377,7 +378,7 @@ func (r *storageResource) Delete(ctx context.Context, req resource.DeleteRequest
 	storageId := int(data.Id.ValueInt64())
 
 	// Detach from server if attached
-	if !data.AttachedTo.IsNull() {
+	if !data.AttachedTo.IsNull() && !data.AttachedTo.IsUnknown() {
 		_, err := r.client.Storages.Detach(storageId)
 		if err != nil {
 			resp.Diagnostics.AddError("unable to detach storage before deletion", err.Error())
