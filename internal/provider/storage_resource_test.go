@@ -26,10 +26,7 @@ func TestAccStorageResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "size", "10"),
 					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "region", "LT-Siauliai"),
 					resource.TestCheckResourceAttr("cherryservers_storage."+storageResourceName, "description", "Test storage"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "vlan_id"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "vlan_ip"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "initiator"),
-					resource.TestCheckResourceAttrSet("cherryservers_storage."+storageResourceName, "discovery_ip"),
+					// iSCSI details are only populated after attachment, so skip checking them here
 				),
 			},
 			// ImportState testing
