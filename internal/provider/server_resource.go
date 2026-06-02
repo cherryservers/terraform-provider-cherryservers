@@ -465,7 +465,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	if !data.UserData.IsNull() {
 		userData := data.UserData.ValueString()
-		if err := isBase64(userData); err == nil {
+		if err := validateBase64(userData); err == nil {
 			request.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
@@ -707,7 +707,7 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 
 	if !plan.UserData.IsNull() {
 		userData := plan.UserData.ValueString()
-		if err := isBase64(userData); err == nil {
+		if err := validateBase64(userData); err == nil {
 			requestReinstall.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
