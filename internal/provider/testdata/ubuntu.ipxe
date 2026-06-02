@@ -1,0 +1,35 @@
+#!ipxe
+# Ubuntu 24.04 LTS (Noble) manual netboot, amd64
+dhcp
+
+# ---------------- Network config ----------------
+# The variables ${IP_ADDRESS}, ${GATEWAY},
+# ${NETMASK}, and ${IFACE} are automatically
+# populated during script execution.
+
+set client_ip ${IP_ADDRESS}
+set gateway ${GATEWAY}
+set netmask ${NETMASK}
+set iface ${IFACE}
+set dns1 10.100.0.53
+set dns2 10.100.0.54
+# -------------------------------------------------
+
+# Series directory and exact ISO version
+set series   24.04
+set iso_ver  24.04.3
+set arch     amd64
+
+set base       http://releases.ubuntu.com/${series}
+set kernel_url ${base}/netboot/${arch}/linux
+set initrd_url ${base}/netboot/${arch}/initrd
+set iso_url    ${base}/ubuntu-${iso_ver}-live-server-${arch}.iso
+
+echo Booting Ubuntu ${iso_ver} (manual install)...
+imgfree
+kernel ${kernel_url} \
+    ip=dhcp \
+    modprobe.blacklist=rndis_host \
+    url=${iso_url} fsck.mode=skip
+initrd ${initrd_url}
+boot

@@ -1,0 +1,22 @@
+#!ipxe
+# AlmaLinux 10 (Freshwater) installer using the BaseOS tree.
+dhcp
+
+# ---------------- Network config ----------------
+# The variables ${IP_ADDRESS}, ${GATEWAY},
+# ${NETMASK}, and ${IFACE} are automatically
+# populated during script execution.
+
+set client_ip ${IP_ADDRESS}
+set gateway ${GATEWAY}
+set netmask ${NETMASK}
+set iface ${IFACE}
+set dns1 10.100.0.53
+set dns2 10.100.0.54
+# -------------------------------------------------
+
+set version 10
+set mirror https://repo.almalinux.org/almalinux/${version}/BaseOS/x86_64/os
+kernel ${mirror}/images/pxeboot/vmlinuz ip=dhcp inst.stage2=${mirror} inst.repo=${mirror}
+initrd ${mirror}/images/pxeboot/initrd.img
+boot
