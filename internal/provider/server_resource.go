@@ -771,10 +771,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
 
-	if !plan.Image.Equal(state.Image) ||
-		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
-		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
-		!plan.UserData.Equal(state.UserData) {
+	if isReinstall(plan, state) {
 		if !plan.AllowReinstall.ValueBool() {
 			resp.Diagnostics.AddError("allow_reinstall attribute not set",
 				"updating image, ssh_key_ids, os_partition_size, user_data or ipxe requires setting allow_reinstall to true")
