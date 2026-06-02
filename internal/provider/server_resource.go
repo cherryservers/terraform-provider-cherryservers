@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -30,10 +32,14 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                = &serverResource{}
-	_ resource.ResourceWithConfigure   = &serverResource{}
-	_ resource.ResourceWithImportState = &serverResource{}
+	_ resource.Resource                   = &serverResource{}
+	_ resource.ResourceWithConfigure      = &serverResource{}
+	_ resource.ResourceWithImportState    = &serverResource{}
+	_ resource.ResourceWithModifyPlan     = &serverResource{}
+	_ resource.ResourceWithValidateConfig = &serverResource{}
 )
+
+const ipxeImage = "custom_ipxe_install"
 
 func NewServerResource() resource.Resource {
 	return &serverResource{}
@@ -56,6 +62,7 @@ type serverResourceModel struct {
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
 	IPAddressesIds      types.Set      `tfsdk:"ip_addresses_ids"`
 	UserData            types.String   `tfsdk:"user_data"`
+	IPXE                types.String   `tfsdk:"ipxe"`
 	Tags                types.Map      `tfsdk:"tags"`
 	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
 	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
@@ -213,8 +220,20 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"ipxe": schema.StringAttribute{
+				Description: "Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. " +
+					"Updating this attribute requires a server re-install.",
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					WarnIfChangedString(warnReinstallSummary, warnReinstallSummary),
+				},
+			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the server operating system. " +
+					"Updating this attribute requires a server re-install. " +
+					"If iPXE is used, this must be set to `" + ipxeImage +
+					"` or left unconfigured, in which case the provider will set the " +
+					"correct image. " +
 					"Updating this attribute requires a server re-install.",
 				Optional: true,
 				Computed: true,
@@ -390,7 +409,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"allow_reinstall": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. " +
+				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size`, `user_data` or `ipxe`. " +
 					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update.",
 				Default: booldefault.StaticBool(false),
 			},
@@ -400,6 +419,130 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			}),
 		},
 	}
+}
+
+func (r *serverResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	if req.Config.Raw.IsNull() {
+		return
+	}
+
+	var config serverResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	img := config.Image
+
+	// If image is set to iPXE, require an iPXE script.
+	// It's still possible to break things if image is unknown and
+	// resolves to the iPXE image, but there's no way to avoid that,
+	// without prohibiting unknown images entirely or API changes,
+	// since we can't know if an iPXE script is required in
+	// such cases.
+	if img.ValueString() == ipxeImage && config.IPXE.IsNull() {
+		resp.Diagnostics.AddAttributeError(path.Root("ipxe"),
+			"Missing Attribute Configuration",
+			fmt.Sprintf("ipxe must be configured when image is set to %q", ipxeImage))
+	}
+
+	// If image is NOT iPXE or null, prohibit iPXE script attribute.
+	if (img.ValueString() != ipxeImage && !img.IsNull()) && !config.IPXE.IsNull() {
+		resp.Diagnostics.AddAttributeError(path.Root("ipxe"),
+			"Invalid Attribute Configuration",
+			fmt.Sprintf("Configuring ipxe is only allowed with image "+
+				"configured to %q", ipxeImage))
+	}
+}
+
+// defaultImage gets a default OS image for the given server plan.
+// Specifically, it tries to find the latest Ubuntu version,
+// with a fallback to a random image.
+func (r *serverResource) defaultImage(plan string) (string, error) {
+	images, _, err := r.client.Images.List(plan, nil)
+	if err != nil {
+		return "", err
+	}
+
+	var newImage string
+	for _, image := range images {
+		// Try to pick the latest ubuntu version.
+		if strings.HasPrefix(image.Slug, "ubuntu") && image.Slug > newImage {
+			newImage = image.Slug
+		}
+	}
+
+	// If for some reason we couldn't find an image, try to fall back to the first
+	// one in the slice.
+	if newImage == "" {
+		if len(images) == 0 {
+			return "", fmt.Errorf("no images found for plan %q", plan)
+		}
+		newImage = images[0].Slug
+	}
+
+	return newImage, nil
+}
+
+func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan, state serverResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If iPXE script is set, set iPXE image.
+	if !plan.IPXE.IsNull() {
+		plan.Image = types.StringValue(ipxeImage)
+	}
+
+	if req.State.Raw.IsNull() {
+		resp.Plan.Set(ctx, plan)
+		return
+	}
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Power state can be unpredictable when re-installing.
+	if isReinstall(plan, state) {
+		plan.PowerState = types.StringUnknown()
+	}
+
+	// This state is prohibited by configuration validators, but can occur when
+	// a server resource is imported. If image is set to an iPXE image, but there's no iPXE
+	// script, replace the image with some default OS image. Configuration and plan conflicts
+	// won't happen, because configuring iPXE image with no script is not allowed by the validators.
+	if isReinstall(plan, state) && plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
+
+		// Server plan value must be known at this point, since updating it triggers re-creation,
+		// so this is just being extra defensive.
+		serverPlan := plan.Plan
+		if serverPlan.IsUnknown() {
+			resp.Diagnostics.AddError(
+				"Unknown Server Plan Value",
+				fmt.Sprintf("Encountered server %q plan value \"unknown\" "+
+					"when modifying planned server image.", plan.Id.ValueString()),
+			)
+		}
+
+		img, err := r.defaultImage(serverPlan.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("No Default Plan Image",
+				fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
+		}
+		plan.Image = types.StringValue(img)
+	}
+
+	resp.Plan.Set(ctx, plan)
 }
 
 func (r *serverResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -469,6 +612,18 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 			request.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
+			return
+		}
+	}
+
+	if !data.IPXE.IsNull() {
+		ipxe := data.IPXE.ValueString()
+		if err := validateBase64(ipxe); err == nil {
+			request.IPXE = ipxe
+		} else {
+			resp.Diagnostics.AddError(
+				"failed to parse ipxe, check that it's valid base64", err.Error(),
+			)
 			return
 		}
 	}
@@ -622,7 +777,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		!plan.UserData.Equal(state.UserData) {
 		if !plan.AllowReinstall.ValueBool() {
 			resp.Diagnostics.AddError("allow_reinstall attribute not set",
-				"updating image, ssh_key_ids, os_partition_size or user_data, requires setting allow_reinstall to true")
+				"updating image, ssh_key_ids, os_partition_size, user_data or ipxe requires setting allow_reinstall to true")
 			return
 		}
 
@@ -715,6 +870,18 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		}
 	}
 
+	if !plan.IPXE.IsNull() {
+		ipxe := plan.IPXE.ValueString()
+		if err := validateBase64(ipxe); err == nil {
+			requestReinstall.IPXE = ipxe
+		} else {
+			resp.Diagnostics.AddError(
+				"failed to parse ipxe, ensure it's valid base64", err.Error(),
+			)
+			return
+		}
+	}
+
 	server, _, err := r.client.Servers.Reinstall(serverID, requestReinstall)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -738,15 +905,12 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 				return backoff.Permanent(e)
 			}
 
-			if s.Status == "deploying" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.Status == "deployed" {
+			// allocated is the success status for servers that use iPXE.
+			if s.Status == "deployed" || s.Status == "allocated" {
 				return nil
 			}
 
-			return backoff.Permanent(errors.New("server is in unknown status"))
+			return fmt.Errorf("server %d inactive, status: %q", server.ID, s.Status)
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(updateTimeout),
 			backoff.WithInitialInterval(time.Second*10)))
@@ -782,4 +946,15 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 func (r *serverResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func isReinstall(plan, state serverResourceModel) bool {
+	if !plan.IPXE.Equal(state.IPXE) ||
+		!plan.Image.Equal(state.Image) ||
+		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
+		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
+		!plan.UserData.Equal(state.UserData) {
+		return true
+	}
+	return false
 }
