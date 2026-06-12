@@ -55,14 +55,14 @@ resource "cherryservers_server" "server" {
 - `hostname` (String) Hostname of the server.
 - `image` (String) Slug of the server operating system. Updating this attribute requires a server re-install. If iPXE is used, this must be set to `custom_ipxe_install` or left unconfigured, in which case the provider will set the correct image. Updating this attribute requires a server re-install.
 - `ip_addresses_ids` (Set of String, Deprecated) **Deprecated**.Set of the IP address IDs to be embedded into the server.
-- `ipxe` (String) Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. Updating this attribute requires a server re-install.
+- `ipxe` (String, Sensitive) Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. Updating this attribute requires a server re-install.
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB. Updating this attribute requires a server re-install.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server. Updating this attribute requires a server re-install.
 - `tags` (Map of String) Key/value metadata for server tagging.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
-- `user_data` (String) Base64 encoded user-data blob. It should be a bash or cloud-config script. Updating this attribute requires a server re-install.
+- `user_data` (String, Sensitive) Base64 encoded user-data blob. It should be a bash or cloud-config script. Updating this attribute requires a server re-install.
 
 ### Read-Only
 

@@ -227,6 +227,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					WarnIfChangedString(warnReinstallSummary, warnReinstallSummary),
 				},
+				Sensitive: true,
 			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the server operating system. " +
@@ -282,6 +283,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
 				},
+				Sensitive: true,
 			},
 			"tags": schema.MapAttribute{
 				Description: "Key/value metadata for server tagging.",
