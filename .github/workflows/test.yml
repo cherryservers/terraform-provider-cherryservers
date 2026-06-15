@@ -92,7 +92,7 @@ jobs:
           CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
           # The sweep flag requires a region for each client, but we don't use that,
           # so just pass "no-region".
-          TESTARGS: "-coverprofile=coverage.txt -parallel=1 -args -sweep='no-region'"
+          TESTARGS: "-coverprofile=coverage.txt -args -sweep='no-region'"
         run: make testacc
 
       - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
