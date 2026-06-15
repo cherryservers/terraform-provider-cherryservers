@@ -2,5 +2,6 @@ default: testacc
 
 # Run acceptance tests
 .PHONY: testacc
+
 testacc:
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
+	TF_AC=1 go test ./... -v -timeout 60m $(TESTARGS)
