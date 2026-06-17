@@ -222,7 +222,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"ipxe": schema.StringAttribute{
 				Description: "Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. " +
-					"Updating this attribute requires a server re-install.",
+					"Updating this attribute requires a server re-install. " +
+					"Note that not all server plans support iPXE, use the plan/plans data sources " +
+					"to check supported OS images.",
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					WarnIfChangedString(warnReinstallSummary, warnReinstallSummary),

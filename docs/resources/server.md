@@ -63,7 +63,7 @@ resource "cherryservers_server" "server" {
 - `hostname` (String) Hostname of the server.
 - `image` (String) Slug of the server operating system. Updating this attribute requires a server re-install. If iPXE is used, this must be set to `custom_ipxe_install` or left unconfigured, in which case the provider will set the correct image. Updating this attribute requires a server re-install.
 - `ip_addresses_ids` (Set of String, Deprecated) **Deprecated**.Set of the IP address IDs to be embedded into the server.
-- `ipxe` (String, Sensitive) Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. Updating this attribute requires a server re-install.
+- `ipxe` (String, Sensitive) Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. Updating this attribute requires a server re-install. Note that not all server plans support iPXE, use the plan/plans data sources to check supported OS images.
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB. Updating this attribute requires a server re-install.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
