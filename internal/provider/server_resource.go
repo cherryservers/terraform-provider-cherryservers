@@ -392,7 +392,8 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional: true,
 				Computed: true,
 				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. " +
-					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update.",
+					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update. " +
+					"Server private IP may change on re-install.",
 				Default: booldefault.StaticBool(false),
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
@@ -401,6 +402,64 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			}),
 		},
 	}
+}
+
+func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	var plan, state serverResourceModel
+
+	// We only care about updates for now, so return if state or plan are null.
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Private IP may change when re-installing server.
+	if isReinstall(plan, state) {
+		ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
+		diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		ipsAttrs := make([]attr.Value, 0, len(ips))
+
+		for i := range ips {
+			if ips[i].Type.ValueString() == "private-ip" {
+				ips[i].Address = types.StringUnknown()
+				ips[i].Id = types.StringUnknown()
+				ips[i].CIDR = types.StringUnknown()
+			}
+
+			ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
+			resp.Diagnostics.Append(ipDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			ipsAttrs = append(ipsAttrs, ipAttr)
+		}
+
+		ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
+		resp.Diagnostics.Append(ipsDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plan.IpAddresses = ipsTf
+	}
+
+	diags := resp.Plan.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
 }
 
 func (r *serverResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -783,4 +842,14 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 func (r *serverResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func isReinstall(plan, state serverResourceModel) bool {
+	if !plan.Image.Equal(state.Image) ||
+		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
+		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
+		!plan.UserData.Equal(state.UserData) {
+		return true
+	}
+	return false
 }
