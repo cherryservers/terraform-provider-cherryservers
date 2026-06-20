@@ -68,6 +68,7 @@ type serverResourceModel struct {
 	Cycle               types.String   `tfsdk:"cycle"`
 	DiscountCode        types.String   `tfsdk:"discount_code"`
 	Pricing             types.Object   `tfsdk:"pricing"`
+	StorageId           types.Int64    `tfsdk:"storage_id"`
 }
 
 type serverPricingModel struct {
@@ -374,6 +375,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"storage_id": schema.Int64Attribute{
+				Optional:    true,
+				Description: "Storage volume ID to attach to this server.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
+			},
 			"pricing": schema.SingleNestedAttribute{
 				Description: "Server pricing data.",
 				Computed:    true,
@@ -490,6 +498,11 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		SpotInstance: data.SpotInstance.ValueBool(),
 		Cycle:        data.Cycle.ValueString(),
 		DiscountCode: data.DiscountCode.ValueString(),
+	}
+
+	// Attach storage if specified
+	if !data.StorageId.IsNull() && !data.StorageId.IsUnknown() {
+		request.StorageID = int(data.StorageId.ValueInt64())
 	}
 
 	if !data.SSHKeyIds.IsNull() && !data.SSHKeyIds.IsUnknown() {

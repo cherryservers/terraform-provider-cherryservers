@@ -134,6 +134,7 @@ func (p *CherryServersProvider) Resources(ctx context.Context) []func() resource
 		NewIpResource,
 		NewServerResource,
 		NewSSHKeyResource,
+		NewStorageResource,
 	}
 }
 
@@ -149,6 +150,8 @@ func (p *CherryServersProvider) DataSources(ctx context.Context) []func() dataso
 		NewPlanSingleDS(cfg),
 		NewPlanListDS(cfg),
 		NewCycleListDS(cfg),
+		NewStorageDataSource,
+		NewStorageListDataSource,
 	}
 }
 
