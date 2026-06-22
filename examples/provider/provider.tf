@@ -14,5 +14,5 @@ variable "cherry_api_key" {
 
 # Configure the Cherry Servers Provider.
 provider "cherryservers" {
-  api_token = var.cherry_api_key // API key can be found in Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
+  api_token = var.cherry_api_key
 }

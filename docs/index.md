@@ -10,6 +10,14 @@ The Cherry Servers provider is used to interact with the resources supported by 
 
 Use the navigation to the left to read about the available resources.
 
+## Authentication
+
+API keys can be created at the Cherry Servers [client portal](https://portal.cherryservers.com/settings/api-keys).
+
+The provider supports authentication via the `CHERRY_AUTH_TOKEN` environment variable, or by explicitly using the `api_token` argument in the provider configuration. A directly specified argument will supersede an environment variable.
+
+See [Terraform documentation](https://developer.hashicorp.com/terraform/language/manage-sensitive-data) for best practices on managing sensitive data.
+
 ## Example Usage
 
 ```terraform
@@ -29,7 +37,7 @@ variable "cherry_api_key" {
 
 # Configure the Cherry Servers Provider.
 provider "cherryservers" {
-  api_token = var.cherry_api_key // API key can be found in Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
+  api_token = var.cherry_api_key
 }
 ```
 
@@ -38,4 +46,4 @@ provider "cherryservers" {
 
 ### Optional
 
-- `api_token` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API.
+- `api_token` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API. Can also be set via the `CHERRY_AUTH_TOKEN` environment variable.
