@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -226,7 +226,7 @@ func (d *serverDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	var serverID int
 	if data.Hostname.ValueString() != "" {
 		var err error
-		serverID, err = serverHostnameToID(data.Hostname.ValueString(), int(data.ProjectId.ValueInt64()), d.client.Servers)
+		serverID, err = serverHostnameToID(ctx, data.Hostname.ValueString(), int(data.ProjectId.ValueInt64()), d.client.Servers)
 		if err != nil {
 			resp.Diagnostics.AddError("couldn't find server ID from hostname", err.Error())
 			return
@@ -240,19 +240,19 @@ func (d *serverDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		}
 	}
 
-	server, _, err := d.client.Servers.Get(serverID, nil)
+	server, _, err := d.client.Servers.Get(ctx, serverID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("server not found", err.Error())
 		return
 	}
 
-	powerState, _, err := d.client.Servers.PowerState(server.ID)
+	powerState, _, err := d.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, d.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, d.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 

@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -81,7 +81,7 @@ func (d *planListDS) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	plans, _, err := d.Client().Plans.List(null_team_id, nil)
+	plans, _, err := d.Client().Plans.List(ctx, null_team_id, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("plan list failed", err.Error())
 		return

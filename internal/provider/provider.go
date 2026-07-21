@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -111,7 +111,7 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 
 	// Example client configuration for data sources and resources
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", p.version, req.TerraformVersion)
-	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiToken), cherrygo.WithUserAgent(userAgent)}
+	args := []cherrygo.ClientOpt{cherrygo.WithAPIKey(apiToken), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		resp.Diagnostics.AddError(

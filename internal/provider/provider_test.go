@@ -2,7 +2,7 @@ package provider
 
 import (
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"

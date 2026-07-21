@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -130,7 +130,7 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		getOptions := cherrygo.GetOptions{}
 		getOptions.Fields = []string{"ssh_key", "email"}
 
-		sshKeys, _, err := d.client.SSHKeys.List(&getOptions)
+		sshKeys, _, err := d.client.SSHKeys.List(ctx, &getOptions)
 		if err != nil {
 			resp.Diagnostics.AddError("couldn't read project SSHKeys", err.Error())
 			return
@@ -154,7 +154,7 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		}
 	}
 
-	sshKey, _, err := d.client.SSHKeys.Get(sshKeyID, nil)
+	sshKey, _, err := d.client.SSHKeys.Get(ctx, sshKeyID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to read a CherryServers SSH Key data source",

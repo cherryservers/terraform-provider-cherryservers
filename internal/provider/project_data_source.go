@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -123,7 +123,7 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	project, _, err := d.client.Projects.Get(int(projectID), nil)
+	project, _, err := d.client.Projects.Get(ctx, int(projectID), nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error: unable to read a CherryServers project data source",
@@ -135,8 +135,8 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	state.Id = types.Int64Value(int64(project.ID))
 	state.Name = types.StringValue(project.Name)
 	state.BGP = &projectBGPModel{
-		Enabled:  types.BoolValue(project.Bgp.Enabled),
-		LocalASN: types.Int64Value(int64(project.Bgp.LocalASN)),
+		Enabled:  types.BoolValue(project.BGP.Enabled),
+		LocalASN: types.Int64Value(int64(project.BGP.LocalASN)),
 	}
 
 	// Write logs using the tflog package

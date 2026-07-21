@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -8,7 +9,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -43,8 +45,8 @@ func generateAlphaString(length int) string {
 
 var ipv4Regex = regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)
 
-func findPlanIndex(id int, client *cherrygo.Client) (int, error) {
-	plans, _, err := client.Plans.List(0, nil)
+func findPlanIndex(ctx context.Context, id int, client *cherrygo.Client) (int, error) {
+	plans, _, err := client.Plans.List(ctx, 0, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -108,5 +110,13 @@ func TestGeneratePassword(t *testing.T) {
 				hasLowercase, hasNonFirstUppercase, hasNonLastDigit, allAlphaNums)
 		}
 
+	}
+}
+
+type checkFuncWithContext func(context.Context, *terraform.State) error
+
+func checkWithContext(ctx context.Context, f checkFuncWithContext) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		return f(ctx, s)
 	}
 }
