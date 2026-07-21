@@ -2,11 +2,9 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -497,28 +495,10 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	err = backoff.Retry(
-		func() error {
-			stateOption := cherrygo.GetOptions{Fields: []string{"state"}}
-			s, _, e := r.client.Servers.Get(ctx, server.ID, &stateOption)
-			if e != nil {
-				return backoff.Permanent(e)
-			}
+	deployCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
-			if s.State == "pending" || s.State == "provisioning" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.State == "active" {
-				return nil
-			}
-
-			return backoff.Permanent(errors.New("failed to deploy server"))
-		}, backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(createTimeout),
-			backoff.WithInitialInterval(time.Second*10),
-		),
-	)
+	_, _, err = r.client.Servers.WaitForStatus(deployCtx, server.ID, cherrygo.StatusDeployed)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
@@ -737,28 +717,10 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		return
 	}
 
-	err = backoff.Retry(
-		func() error {
-			statusOption := cherrygo.GetOptions{Fields: []string{"status"}}
-			s, _, e := r.client.Servers.Get(ctx, server.ID, &statusOption)
-			if e != nil {
-				return backoff.Permanent(e)
-			}
+	deployCtx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
-			if s.Status == "deploying" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.Status == "deployed" {
-				return nil
-			}
-
-			return backoff.Permanent(errors.New("server is in unknown status"))
-		}, backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(updateTimeout),
-			backoff.WithInitialInterval(time.Second*10),
-		),
-	)
+	_, _, err = r.client.Servers.WaitForStatus(deployCtx, server.ID, cherrygo.StatusDeployed)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
