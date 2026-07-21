@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -78,7 +78,7 @@ func (d *regionListDS) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 
-	regions, _, err := d.Client().Regions.List(nil)
+	regions, _, err := d.Client().Regions.List(ctx, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("regions list failed", err.Error())
 		return

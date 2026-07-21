@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 

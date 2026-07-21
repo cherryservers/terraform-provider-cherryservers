@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -48,8 +48,8 @@ func (d *projectResourceModel) populateState(project cherrygo.Project, ctx conte
 	d.Id = types.StringValue(strconv.Itoa(project.ID))
 
 	bgp := projectBGPModel{
-		Enabled:  types.BoolValue(project.Bgp.Enabled),
-		LocalASN: types.Int64Value(int64(project.Bgp.LocalASN)),
+		Enabled:  types.BoolValue(project.BGP.Enabled),
+		LocalASN: types.Int64Value(int64(project.BGP.LocalASN)),
 	}
 
 	bgpTf, bgpDiags := types.ObjectValueFrom(ctx, bgp.AttributeTypes(), bgp)
@@ -147,10 +147,10 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	teamId := data.TeamId.ValueInt64()
 	request := &cherrygo.CreateProject{
 		Name: data.Name.ValueString(),
-		Bgp:  bgp.Enabled.ValueBool(),
+		BGP:  bgp.Enabled.ValueBool(),
 	}
 
-	project, _, err := r.client.Projects.Create(int(teamId), request)
+	project, _, err := r.client.Projects.Create(ctx, int(teamId), request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to create a CherryServers project resource",
@@ -180,7 +180,7 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	projectId, _ := strconv.Atoi(data.Id.ValueString())
-	project, projectGetResp, err := r.client.Projects.Get(projectId, nil)
+	project, projectGetResp, err := r.client.Projects.Get(ctx, projectId, nil)
 	if err != nil {
 		if is404Error(projectGetResp) {
 			resp.State.RemoveResource(ctx)
@@ -217,11 +217,11 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 	bgpEnabled := bgp.Enabled.ValueBool()
 	request := &cherrygo.UpdateProject{
 		Name: &name,
-		Bgp:  &bgpEnabled,
+		BGP:  &bgpEnabled,
 	}
 
 	projectID, _ := strconv.Atoi(data.Id.ValueString())
-	project, _, err := r.client.Projects.Update(projectID, request)
+	project, _, err := r.client.Projects.Update(ctx, projectID, request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers project resource",
@@ -250,7 +250,7 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 
 	projectId, _ := strconv.Atoi(data.Id.ValueString())
-	if _, err := r.client.Projects.Delete(projectId); err != nil {
+	if _, err := r.client.Projects.Delete(ctx, projectId); err != nil {
 		resp.Diagnostics.AddError(
 			"unable to delete a CherryServers project resource",
 			err.Error(),

@@ -1,16 +1,19 @@
 package provider
 
 import (
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccIPResource_basic(t *testing.T) {
+	ctx := t.Context()
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	projectName := testProjectNamePrefix + acctest.RandString(5)
 	aRecord := generateAlphaString(8)
@@ -22,7 +25,7 @@ func TestAccIPResource_basic(t *testing.T) {
 			{
 				Config: testAccIPResourceBasicConfig(projectName, teamId, "LT-Siauliai"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
+					testAccCheckCherryServersIPExists(ctx, "cherryservers_ip.test_ip_ip"),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "id"),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_id", "0"),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "target_hostname", ""),
@@ -59,6 +62,7 @@ func TestAccIPResource_basic(t *testing.T) {
 }
 
 func TestAccIPResource_fullConfig(t *testing.T) {
+	ctx := t.Context()
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	aRecord := generateAlphaString(8)
 	resource.ParallelTest(t, resource.TestCase{
@@ -68,7 +72,7 @@ func TestAccIPResource_fullConfig(t *testing.T) {
 			{
 				Config: testAccIPResourceFullConfig(teamId, aRecord),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersIPExists("cherryservers_ip.test_ip_ip"),
+					testAccCheckCherryServersIPExists(ctx, "cherryservers_ip.test_ip_ip"),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "a_record_effective", aRecord+".cloud.cherryservers.net."),
 					resource.TestCheckResourceAttr("cherryservers_ip.test_ip_ip", "ptr_record_effective", "test."),
 					resource.TestCheckResourceAttrSet("cherryservers_ip.test_ip_ip", "target_ip_id"),
@@ -151,7 +155,7 @@ resource "cherryservers_ip" "test_ip_ip" {
 `, testProjectNamePrefix+acctest.RandString(5), teamId, aRecord)
 }
 
-func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFunc {
+func testAccCheckCherryServersIPExists(ctx context.Context, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 
@@ -164,7 +168,7 @@ func testAccCheckCherryServersIPExists(resourceName string) resource.TestCheckFu
 		client := testCherryGoClient
 
 		// Try to get the IP
-		_, _, err := client.IPAddresses.Get(rs.Primary.ID, nil)
+		_, _, err := client.IPAddresses.Get(ctx, rs.Primary.ID, nil)
 		if err != nil {
 			return err
 		}

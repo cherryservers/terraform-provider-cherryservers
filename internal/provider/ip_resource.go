@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -64,10 +64,10 @@ func (d *ipResourceModel) populateState(ip cherrygo.IPAddress, ctx context.Conte
 	d.TargetHostname = types.StringValue(ip.TargetedTo.Hostname)
 	d.TargetIPID = types.StringValue(ip.RoutedTo.ID)
 	d.ARecordEffective = types.StringValue(ip.ARecord)
-	d.PTRRecordEffective = types.StringValue(ip.PtrRecord)
+	d.PTRRecordEffective = types.StringValue(ip.PTRRecord)
 	d.Address = types.StringValue(ip.Address)
 	d.AddressFamily = types.Int64Value(int64(ip.AddressFamily))
-	d.CIDR = types.StringValue(ip.Cidr)
+	d.CIDR = types.StringValue(ip.CIDR)
 	d.Gateway = types.StringValue(ip.Gateway)
 	d.Type = types.StringValue(ip.Type)
 
@@ -249,7 +249,7 @@ func (r *ipResource) Create(ctx context.Context, req resource.CreateRequest, res
 
 	request := &cherrygo.CreateIPAddress{
 		Region:    data.Region.ValueString(),
-		PtrRecord: data.PTRRecord.ValueString(),
+		PTRRecord: data.PTRRecord.ValueString(),
 		ARecord:   data.ARecord.ValueString(),
 		RoutedTo:  data.TargetIPID.ValueString(),
 	}
@@ -260,20 +260,20 @@ func (r *ipResource) Create(ctx context.Context, req resource.CreateRequest, res
 
 	request.Tags = &tagsMap
 
-	target, err := data.getTargetId(r)
+	target, err := data.getTargetId(ctx, r)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid target server ID or hostname", err.Error())
 		return
 	}
 	request.TargetedTo = target
 
-	ip, _, err := r.client.IPAddresses.Create(int(data.ProjectId.ValueInt64()), request)
+	ip, _, err := r.client.IPAddresses.Create(ctx, int(data.ProjectId.ValueInt64()), request)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to create a CherryServers IP resource", err.Error())
 		return
 	}
 
-	ip, _, err = r.client.IPAddresses.Get(ip.ID, nil)
+	ip, _, err = r.client.IPAddresses.Get(ctx, ip.ID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to read a CherryServers ip resource",
@@ -302,7 +302,7 @@ func (r *ipResource) Read(ctx context.Context, req resource.ReadRequest, resp *r
 		return
 	}
 
-	ip, ipGetResp, err := r.client.IPAddresses.Get(data.Id.ValueString(), nil)
+	ip, ipGetResp, err := r.client.IPAddresses.Get(ctx, data.Id.ValueString(), nil)
 	if err != nil {
 		if is404Error(ipGetResp) {
 			resp.State.RemoveResource(ctx)
@@ -345,7 +345,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	if !data.PTRRecord.Equal(ptrState) {
-		request.PtrRecord = data.PTRRecord.ValueString()
+		request.PTRRecord = data.PTRRecord.ValueString()
 	}
 
 	tagsMap := make(map[string]string, len(data.Tags.Elements()))
@@ -354,7 +354,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 
 	request.Tags = &tagsMap
 
-	target, err := data.getTargetId(r)
+	target, err := data.getTargetId(ctx, r)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid target server ID or hostname", err.Error())
 		return
@@ -362,7 +362,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	request.TargetedTo = target
 
 	ipID := data.Id.ValueString()
-	_, _, err = r.client.IPAddresses.Update(ipID, &request)
+	_, _, err = r.client.IPAddresses.Update(ctx, ipID, &request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers ip resource",
@@ -371,7 +371,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	ip, _, err := r.client.IPAddresses.Get(ipID, nil)
+	ip, _, err := r.client.IPAddresses.Get(ctx, ipID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to read a CherryServers ip resource",
@@ -399,7 +399,7 @@ func (r *ipResource) Delete(ctx context.Context, req resource.DeleteRequest, res
 		return
 	}
 
-	if _, err := r.client.IPAddresses.Unassign(data.Id.ValueString()); err != nil {
+	if _, err := r.client.IPAddresses.Unassign(ctx, data.Id.ValueString()); err != nil {
 		resp.Diagnostics.AddError(
 			"unable to unassign a CherryServers ip resource from target, before deleting",
 			err.Error(),
@@ -408,7 +408,7 @@ func (r *ipResource) Delete(ctx context.Context, req resource.DeleteRequest, res
 	}
 
 	IpID := data.Id.ValueString()
-	if _, err := r.client.IPAddresses.Remove(IpID); err != nil {
+	if _, err := r.client.IPAddresses.Remove(ctx, IpID); err != nil {
 		resp.Diagnostics.AddError(
 			"unable to delete a CherryServers ip resource",
 			err.Error(),
@@ -425,11 +425,11 @@ func (r *ipResource) ImportState(ctx context.Context, req resource.ImportStateRe
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (d *ipResourceModel) getTargetId(r *ipResource) (string, error) {
+func (d *ipResourceModel) getTargetId(ctx context.Context, r *ipResource) (string, error) {
 	if d.TargetId.ValueString() != "0" && d.TargetId.ValueString() != "" {
 		return d.TargetId.ValueString(), nil
 	} else if d.TargetHostname.ValueString() != "" {
-		srvID, err := serverHostnameToID(d.TargetHostname.ValueString(), int(d.ProjectId.ValueInt64()), r.client.Servers)
+		srvID, err := serverHostnameToID(ctx, d.TargetHostname.ValueString(), int(d.ProjectId.ValueInt64()), r.client.Servers)
 		return strconv.Itoa(srvID), err
 	}
 	return "0", nil

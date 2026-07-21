@@ -1,12 +1,15 @@
 package provider
 
 import (
+	"context"
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/cherryservers/cherrygo/v4"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -35,7 +38,7 @@ func sharedClient() (any, error) {
 	//TODO
 	//Make user agent version responsive.
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", "test", "1.0.0")
-	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
+	args := []cherrygo.ClientOpt{cherrygo.WithAPIKey(apiKey), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		return nil, err
@@ -64,14 +67,17 @@ func init() {
 				return fmt.Errorf("error parsing team id: %s", err)
 			}
 
-			projects, _, err := conn.Projects.List(teamId, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Minute)
+			defer cancel()
+
+			projects, _, err := conn.Projects.List(ctx, teamId, nil)
 			if err != nil {
 				return fmt.Errorf("error listing projects: %s", err)
 			}
 
 			for _, project := range projects {
 				if strings.HasPrefix(project.Name, testProjectNamePrefix) {
-					_, err = conn.Projects.Delete(project.ID)
+					_, err = conn.Projects.Delete(ctx, project.ID)
 					if err != nil {
 						return fmt.Errorf("error deleting project: %s", err)
 					}
