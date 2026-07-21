@@ -516,7 +516,9 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 			return backoff.Permanent(errors.New("failed to deploy server"))
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(createTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+			backoff.WithInitialInterval(time.Second*10),
+		),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
@@ -686,7 +688,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel, resp *resource.UpdateResponse) {
-	password, err := generatePassword()
+	password, err := cherrygo.GeneratePassword()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to generate password", err.Error(),
@@ -754,7 +756,9 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 			return backoff.Permanent(errors.New("server is in unknown status"))
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(updateTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+			backoff.WithInitialInterval(time.Second*10),
+		),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
