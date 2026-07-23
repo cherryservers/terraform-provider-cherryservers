@@ -494,7 +494,7 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
-	var plan, state serverResourceModel
+	var plan, state, config serverResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -516,6 +516,11 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Power state can be unpredictable when re-installing.
 	if isReinstall(plan, state) {
 		plan.PowerState = types.StringUnknown()
@@ -523,30 +528,42 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 
 	// This state is prohibited by configuration validators, but can occur when
 	// a server resource is imported. If image is set to an iPXE image, but there's no iPXE
-	// script, replace the image with some default OS image. Configuration and plan conflicts
+	// script, try to replace the image with some default OS image. Configuration and plan conflicts
 	// won't happen, because configuring iPXE image with no script is not allowed by the validators.
 	if isReinstall(plan, state) && plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
-
-		// Server plan value must be known at this point, since updating it triggers re-creation,
-		// so this is just being extra defensive.
 		serverPlan := plan.Plan
-		if serverPlan.IsUnknown() {
-			resp.Diagnostics.AddError(
-				"Unknown Server Plan Value",
-				fmt.Sprintf("Encountered server %q plan value \"unknown\" "+
-					"when modifying planned server image.", plan.Id.ValueString()),
-			)
+
+		// Re-installation requires an image, so try to find a default,
+		// if the user didn't configure it explicitly.
+		if config.Image.IsNull() {
+			resp.Diagnostics.Append(r.tryReinstallImageModify(serverPlan, &plan)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
-		img, err := r.defaultImage(serverPlan.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("No Default Plan Image",
-				fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
-		}
-		plan.Image = types.StringValue(img)
 	}
 
 	resp.Plan.Set(ctx, plan)
+}
+
+func (r *serverResource) tryReinstallImageModify(serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	// Set image to unknown, so that there are no conflicts it we try to set it
+	// during execution, when the plan is guaranteed to be known.
+	plan.Image = types.StringUnknown()
+
+	if !serverPlan.IsUnknown() {
+		img, err := r.defaultImage(serverPlan.ValueString())
+		if err != nil {
+			d.AddError("No Default Plan Image",
+				fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
+			return d
+		}
+		plan.Image = types.StringValue(img)
+	}
+	return d
 }
 
 func (r *serverResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -670,7 +687,9 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 			return backoff.Permanent(errors.New("failed to deploy server"))
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(createTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+			backoff.WithInitialInterval(time.Second*10),
+		),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
@@ -763,11 +782,11 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state serverResourceModel
+	var plan, state, config serverResourceModel
 
-	// Read Terraform plan and state data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -782,7 +801,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 			return
 		}
 
-		r.reinstall(ctx, plan, resp)
+		r.reinstall(ctx, plan, config, resp)
 
 	}
 
@@ -836,7 +855,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel, resp *resource.UpdateResponse) {
+func (r *serverResource) reinstall(ctx context.Context, plan, config serverResourceModel, resp *resource.UpdateResponse) {
 	password, err := generatePassword()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -867,6 +886,17 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 			requestReinstall.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
+			return
+		}
+	}
+
+	// This is a state that can occur if the server resource was imported.
+	// We can't re-install with an iPXE image, because we don't know the script value.
+	// Try to find some default image, if the user didn't configure it.
+	if requestReinstall.Image == ipxeImage && plan.IPXE.IsNull() && config.Image.IsNull() {
+		requestReinstall.Image, err = r.defaultImage(plan.Plan.String())
+		if err != nil {
+			resp.Diagnostics.AddError("failed to find default plan image", err.Error())
 			return
 		}
 	}
@@ -914,7 +944,9 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 			return fmt.Errorf("server %d inactive, status: %q", server.ID, s.Status)
 		}, backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(updateTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+			backoff.WithInitialInterval(time.Second*10),
+		),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
