@@ -440,11 +440,6 @@ func (r *serverResource) ValidateConfig(ctx context.Context, req resource.Valida
 	img := config.Image
 
 	// If image is set to iPXE, require an iPXE script.
-	// It's still possible to break things if image is unknown and
-	// resolves to the iPXE image, but there's no way to avoid that,
-	// without prohibiting unknown images entirely or API changes,
-	// since we can't know if an iPXE script is required in
-	// such cases.
 	if img.ValueString() == ipxeImage && config.IPXE.IsNull() {
 		resp.Diagnostics.AddAttributeError(path.Root("ipxe"),
 			"Missing Attribute Configuration",
@@ -452,11 +447,21 @@ func (r *serverResource) ValidateConfig(ctx context.Context, req resource.Valida
 	}
 
 	// If image is NOT iPXE or null, prohibit iPXE script attribute.
+	// This prohibits unknown images, but that doesn't really matter
+	// since custom iPXE image is the only valid image value when iPXE is used.
 	if (img.ValueString() != ipxeImage && !img.IsNull()) && !config.IPXE.IsNull() {
-		resp.Diagnostics.AddAttributeError(path.Root("ipxe"),
-			"Invalid Attribute Configuration",
-			fmt.Sprintf("Configuring ipxe is only allowed with image "+
-				"configured to %q", ipxeImage))
+		if img.IsUnknown() {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("image"), "Invalid Attribute Configuration",
+				"image cannot be unknown when ipxe is configured. "+
+					fmt.Sprintf("Omit image or set it to %q", ipxeImage),
+			)
+		} else {
+			resp.Diagnostics.AddAttributeError(path.Root("image"),
+				"Invalid Attribute Configuration",
+				fmt.Sprintf("%q image is not compatible with ipxe. Omit image or set it to %q",
+					img.ValueString(), ipxeImage))
+		}
 	}
 }
 
