@@ -550,7 +550,7 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 func (r *serverResource) tryReinstallImageModify(serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
 	var d diag.Diagnostics
 
-	// Set image to unknown, so that there are no conflicts it we try to set it
+	// Set image to unknown, so that there are no conflicts if we try to set it
 	// during execution, when the plan is guaranteed to be known.
 	plan.Image = types.StringUnknown()
 

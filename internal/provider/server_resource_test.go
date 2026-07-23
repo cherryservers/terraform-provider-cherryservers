@@ -140,7 +140,8 @@ func TestAccServerIPXE(t *testing.T) {
 						plancheck.ExpectKnownValue(
 							resourceName,
 							tfjsonpath.New("image"),
-							knownvalue.StringExact(ipxeImage)),
+							knownvalue.StringExact(ipxeImage),
+						),
 					},
 				},
 				Check: resource.TestCheckResourceAttr(resourceName, "image", ipxeImage),
@@ -210,7 +211,8 @@ func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, regi
 						return true
 					}
 					return false
-				}) {
+				},
+			) {
 				stock = r.StockQty
 				plan = p.Slug
 				region = r.Slug
@@ -438,7 +440,7 @@ func ipxeWithImageConfig(projectName, region, plan, image, ipxe string, team int
 	return fmt.Sprintf(`
 resource "cherryservers_project" "test_server_project" {
   name = "%s"
-  team_id = %d
+  team_id = "%d"
 }
 
 resource "cherryservers_server" "ipxe_test" {
