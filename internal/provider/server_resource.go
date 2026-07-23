@@ -227,7 +227,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"to check supported OS images.",
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
-					WarnIfChangedString(warnReinstallSummary, warnReinstallSummary),
+					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
 				},
 				Sensitive: true,
 			},
