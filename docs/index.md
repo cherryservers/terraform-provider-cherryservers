@@ -39,5 +39,5 @@ provider "cherryservers" {
 
 ### Optional
 
-- `api_key` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys)that allows interactions with the API. Can also be set with the CHERRY_API_KEY environment variable.
-- `api_token` (String, Sensitive, Deprecated) **Deprecated**: use `api_key` instead, as this attribute is deprecated and will removed in the next major version of the provider. Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys)that allows interactions with the API.
+- `api_key` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API. Can also be set with the CHERRY_API_KEY environment variable.
+- `api_token` (String, Sensitive, Deprecated) **Deprecated**: use `api_key` instead, as this attribute is deprecated and will be removed in the next major version of the provider. Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API.

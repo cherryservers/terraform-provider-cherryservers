@@ -53,16 +53,16 @@ func (p *CherryServersProvider) Schema(ctx context.Context, req provider.SchemaR
 		Attributes: map[string]schema.Attribute{
 			"api_token": schema.StringAttribute{
 				Description: "**Deprecated**: use `api_key` instead, as this attribute is deprecated " +
-					"and will removed in the next major version of the provider. " +
-					"Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys)" +
+					"and will be removed in the next major version of the provider. " +
+					"Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) " +
 					"that allows interactions with the API.",
 				Optional:  true,
 				Sensitive: true,
 				DeprecationMessage: "Use `api_key` instead, as this attribute is deprecated " +
-					"and will removed in the next major version of the provider.",
+					"and will be removed in the next major version of the provider.",
 			},
 			"api_key": schema.StringAttribute{
-				Description: "Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys)" +
+				Description: "Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) " +
 					fmt.Sprintf("that allows interactions with the API. Can also be set with the %s ", apiKeyVar) +
 					"environment variable.",
 				Optional:  true,
@@ -141,7 +141,7 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 			"The provider cannot create the CherryServers API client "+
 				"as there is a missing or empty value for the CherryServers API key. "+
 				"Set the API key value in the configuration or use the "+
-				fmt.Sprintf("%s environment variables. ", apiKeyVar),
+				fmt.Sprintf("%s environment variable. ", apiKeyVar),
 		)
 	}
 
