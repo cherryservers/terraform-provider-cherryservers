@@ -36,7 +36,7 @@ func serverList(projectID int, ServerService cherrygo.ServersService) ([]cherryg
 	return srvList, err
 }
 
-func isBase64(s string) error {
+func validateBase64(s string) error {
 	_, err := base64.StdEncoding.DecodeString(s)
 	return err
 }
