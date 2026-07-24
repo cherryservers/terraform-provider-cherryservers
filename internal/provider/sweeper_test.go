@@ -2,11 +2,12 @@ package provider
 
 import (
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/cherryservers/cherrygo/v3"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -19,12 +20,9 @@ func TestMain(m *testing.M) {
 
 // sharedClient returns a common provider client.
 func sharedClient() (any, error) {
-	apiKey := os.Getenv("CHERRY_AUTH_KEY")
+	apiKey := os.Getenv(apiKeyVar)
 	if apiKey == "" {
-		apiKey = os.Getenv("CHERRY_AUTH_TOKEN")
-	}
-	if apiKey == "" {
-		return nil, fmt.Errorf("CHERRY_AUTH_KEY or CHERRY_AUTH_TOKEN must be set for acceptance tests")
+		return nil, fmt.Errorf("%s must be set for acceptance tests", apiKeyVar)
 	}
 
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
@@ -32,8 +30,8 @@ func sharedClient() (any, error) {
 		return nil, fmt.Errorf("CHERRY_TEST_TEAM_ID must be set for acceptance tests")
 	}
 
-	//TODO
-	//Make user agent version responsive.
+	// TODO
+	// Make user agent version responsive.
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", "test", "1.0.0")
 	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)

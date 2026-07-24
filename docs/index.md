@@ -21,16 +21,16 @@ terraform {
 }
 
 # Set the variable value in variables.tf file.
-# Or set the CHERRY_AUTH_KEY or CHERRY_AUTH_TOKEN environment variables.
-variable "cherry_api_token" {
-  description = "Cherry servers API token"
+# Or set the CHERRY_API_KEY environment variable.
+variable "cherry_api_key" {
+  description = "Cherry servers API key"
   type        = string
-  default     = "my_api_token_goes_here"
+  default     = "my_api_key_goes_here"
 }
 
 # Configure the Cherry Servers Provider.
 provider "cherryservers" {
-  api_token = var.cherry_api_token // API token can be found in Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
+  api_key = var.cherry_api_key // API keys can be found at the Cherry Servers client portal - https://portal.cherryservers.com/settings/api-keys
 }
 ```
 
@@ -39,4 +39,5 @@ provider "cherryservers" {
 
 ### Optional
 
-- `api_token` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys) that allows interactions with the API.
+- `api_key` (String, Sensitive) Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys)that allows interactions with the API. Can also be set with the CHERRY_API_KEY environment variable.
+- `api_token` (String, Sensitive, Deprecated) **Deprecated**: use `api_key` instead, as this attribute is deprecated and will removed in the next major version of the provider. Cherry Servers [API Key](https://portal.cherryservers.com/settings/api-keys)that allows interactions with the API.
