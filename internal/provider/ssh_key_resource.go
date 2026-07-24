@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -125,13 +125,13 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		Key:   strings.TrimSpace(data.PublicKey.ValueString()),
 	}
 
-	sshKey, _, err := r.client.SSHKeys.Create(request)
+	sshKey, _, err := r.client.SSHKeys.Create(ctx, request)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating SSH key", err.Error())
 		return
 	}
 
-	sshKey, _, err = r.client.SSHKeys.Get(sshKey.ID, nil)
+	sshKey, _, err = r.client.SSHKeys.Get(ctx, sshKey.ID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading SSH key", err.Error())
 		return
@@ -163,7 +163,7 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	sshKey, sshResp, err := r.client.SSHKeys.Get(id, nil)
+	sshKey, sshResp, err := r.client.SSHKeys.Get(ctx, id, nil)
 	if err != nil {
 		if is404Error(sshResp) {
 			resp.State.RemoveResource(ctx)
@@ -206,13 +206,13 @@ func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Key:   &publicKey,
 	}
 
-	_, _, err = r.client.SSHKeys.Update(id, &request)
+	_, _, err = r.client.SSHKeys.Update(ctx, id, &request)
 	if err != nil {
 		resp.Diagnostics.AddError("error updating SSH key", err.Error())
 		return
 	}
 
-	sshKey, _, err := r.client.SSHKeys.Get(id, nil)
+	sshKey, _, err := r.client.SSHKeys.Get(ctx, id, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("error reading SSH key", err.Error())
 		return
@@ -243,7 +243,7 @@ func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	if _, _, err = r.client.SSHKeys.Delete(id); err != nil {
+	if _, err = r.client.SSHKeys.Delete(ctx, id); err != nil {
 		resp.Diagnostics.AddError("error deleting SSH key", err.Error())
 		return
 	}

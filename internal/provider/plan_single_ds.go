@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -62,9 +62,9 @@ func (d *planSingleDS) Read(ctx context.Context, req datasource.ReadRequest, res
 	var plan cherrygo.Plan
 	var err error = nil
 	if slug != "" {
-		plan, _, err = d.Client().Plans.GetBySlug(slug, nil)
+		plan, _, err = d.Client().Plans.GetBySlug(ctx, slug, nil)
 	} else {
-		plan, _, err = d.Client().Plans.GetByID(int(id), nil)
+		plan, _, err = d.Client().Plans.GetByID(ctx, int(id), nil)
 	}
 
 	if err != nil {

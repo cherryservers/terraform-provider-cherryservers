@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -46,7 +46,7 @@ func (m *regionModel) populateState(ctx context.Context, region cherrygo.Region)
 	m.Name = types.StringValue(region.Name)
 	m.ID = types.Int64Value(int64(region.ID))
 	m.Slug = types.StringValue((region.Slug))
-	m.RegionISO2 = types.StringValue((region.RegionIso2))
+	m.RegionISO2 = types.StringValue((region.RegionISO2))
 
 	hosts, diags := types.ListValueFrom(ctx, types.StringType, region.BGP.Hosts)
 	if diags.HasError() {
@@ -55,7 +55,7 @@ func (m *regionModel) populateState(ctx context.Context, region cherrygo.Region)
 
 	bgp := bgpModel{
 		Hosts: hosts,
-		ASN:   types.Int64Value(int64(region.BGP.Asn)),
+		ASN:   types.Int64Value(int64(region.BGP.ASN)),
 	}
 	bgpObject, diags := types.ObjectValueFrom(ctx, bgpAttributeTypes(), bgp)
 	m.BGP = bgpObject

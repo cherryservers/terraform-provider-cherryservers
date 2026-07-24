@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -103,6 +104,7 @@ data "cherryservers_plan" "by_slug" {
 `
 
 func TestAccPlanList(t *testing.T) {
+	ctx := t.Context()
 	const dsName = "data.cherryservers_plans.all_plans"
 	const simple_vps_id = 625
 	resource.ParallelTest(t, resource.TestCase{
@@ -112,7 +114,7 @@ func TestAccPlanList(t *testing.T) {
 			// Read testing
 			{
 				Config: planAllConfig,
-				Check:  testAccCheckPlanListContains(simple_vps_id, dsName),
+				Check:  testAccCheckPlanListContains(ctx, simple_vps_id, dsName),
 			},
 		},
 	})
@@ -124,9 +126,9 @@ data "cherryservers_plans" "all_plans" {
 }
 `
 
-func testAccCheckPlanListContains(id int, dsName string) resource.TestCheckFunc {
+func testAccCheckPlanListContains(ctx context.Context, id int, dsName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		i, err := findPlanIndex(id, testCherryGoClient)
+		i, err := findPlanIndex(ctx, id, testCherryGoClient)
 		if err != nil {
 			return err
 		}
