@@ -157,8 +157,8 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	ctx = tflog.SetField(ctx, "cherryservers_api_token", apiKey)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "cherryservers_api_token")
+	ctx = tflog.SetField(ctx, "cherryservers_api_key", apiKey)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "cherryservers_api_key")
 
 	tflog.Debug(ctx, "Creating CherryServers client")
 
