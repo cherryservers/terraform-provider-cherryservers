@@ -67,7 +67,7 @@ func init() {
 				return fmt.Errorf("error parsing team id: %s", err)
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
 
 			projects, _, err := conn.Projects.List(ctx, teamId, nil)
