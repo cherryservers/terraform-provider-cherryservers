@@ -22,7 +22,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const apiKeyVar = "CHERRY_API_KEY"
+const (
+	apiKeyVar       = "CHERRY_API_KEY"
+	oldApiKeyVar    = "CHERRY_AUTH_KEY"
+	oldestApiKeyVar = "CHERRY_AUTH_TOKEN"
+)
 
 // Ensure CherryServersProvider satisfies various provider interfaces.
 var (
@@ -107,13 +111,13 @@ func apiKey(diags *diag.Diagnostics, cfg CherryServersProviderModel) string {
 
 	// CHERRY_AUTH_TOKEN and CHERRY_AUTH_KEY are deprecated,
 	// so CHERRY_API_KEY beats them.
-	if k := os.Getenv("CHERRY_AUTH_TOKEN"); k != "" {
+	if k := os.Getenv(oldestApiKeyVar); k != "" {
 		key = k
-		source = "CHERRY_AUTH_TOKEN"
+		source = oldestApiKeyVar
 	}
-	if k := os.Getenv("CHERRY_AUTH_KEY"); k != "" {
+	if k := os.Getenv(oldApiKeyVar); k != "" {
 		key = k
-		source = "CHERRY_AUTH_KEY"
+		source = oldApiKeyVar
 	}
 	if k := os.Getenv(apiKeyVar); k != "" {
 		key = k
@@ -130,7 +134,7 @@ func apiKey(diags *diag.Diagnostics, cfg CherryServersProviderModel) string {
 	}
 
 	// Add a warning if deprecated environment variables are used.
-	if source == "CHERRY_AUTH_KEY" || source == "CHERRY_AUTH_TOKEN" {
+	if source == oldApiKeyVar || source == oldestApiKeyVar {
 		diags.AddWarning(fmt.Sprintf(
 			"%s is deprecated", source,
 		),
