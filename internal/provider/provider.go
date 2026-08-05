@@ -73,7 +73,7 @@ func (p *CherryServersProvider) Schema(ctx context.Context, req provider.SchemaR
 				Optional:  true,
 				Sensitive: true,
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.Expressions{path.MatchRoot("api_token")}...),
+					stringvalidator.ConflictsWith(path.MatchRoot("api_token")),
 				},
 			},
 		},
