@@ -144,7 +144,7 @@ func TestAPISecretHierarchy(t *testing.T) {
 			apiTokenTF: types.StringUnknown(),
 			wantDiags: []diag.Diagnostic{
 				diag.NewAttributeErrorDiagnostic(path.Root("api_token"), "Unknown CherryServers API token",
-					"The provider cannot create the CherryServers API client as there is an unknown configuration value for the CherryServers API token. Either target apply the source of the value first, set the value statically in the configuration, or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables."),
+					"The provider cannot create the CherryServers API client as there is an unknown configuration value for the CherryServers API token. Either target apply the source of the value first, set the value statically in the configuration, or use the CHERRY_API_KEY environment variable."),
 			},
 		},
 		{

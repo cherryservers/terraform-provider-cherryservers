@@ -84,7 +84,7 @@ func apiKey(diags *diag.Diagnostics, cfg CherryServersProviderModel) string {
 			"The provider cannot create the CherryServers API client as there "+
 				"is an unknown configuration value for the CherryServers API token. "+
 				"Either target apply the source of the value first, set the value statically in the configuration,"+
-				" or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables.",
+				fmt.Sprintf(" or use the %s environment variable.", apiKeyVar),
 		)
 	}
 
