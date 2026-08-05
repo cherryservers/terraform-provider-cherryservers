@@ -7,6 +7,7 @@ import (
 
 	"github.com/cherryservers/cherrygo/v3"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -75,30 +76,20 @@ func (p *CherryServersProvider) Schema(ctx context.Context, req provider.SchemaR
 	}
 }
 
-func (p *CherryServersProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	tflog.Info(ctx, "Configuring CherryServers client")
-
-	var data CherryServersProviderModel
-
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if data.APIToken.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+func apiKey(diags *diag.Diagnostics, cfg CherryServersProviderModel) string {
+	if cfg.APIToken.IsUnknown() {
+		diags.AddAttributeError(
 			path.Root("api_token"),
-			"Unknown CherryServers API Token",
+			"Unknown CherryServers API token",
 			"The provider cannot create the CherryServers API client as there "+
-				"is an unknown configuration value for the CherryServers API Token. "+
+				"is an unknown configuration value for the CherryServers API token. "+
 				"Either target apply the source of the value first, set the value statically in the configuration,"+
 				" or use the CHERRY_AUTH_TOKEN or CHERRY_AUTH_KEY environment variables.",
 		)
 	}
 
-	if data.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+	if cfg.APIKey.IsUnknown() {
+		diags.AddAttributeError(
 			path.Root("api_key"),
 			"Unknown CherryServers API key",
 			"The provider cannot create the CherryServers API client as there "+
@@ -108,63 +99,84 @@ func (p *CherryServersProvider) Configure(ctx context.Context, req provider.Conf
 		)
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return ""
 	}
+
+	var source, key string
 
 	// CHERRY_AUTH_TOKEN and CHERRY_AUTH_KEY are deprecated,
 	// so CHERRY_API_KEY beats them.
-	apiKey := os.Getenv("CHERRY_AUTH_KEY")
-	source := "CHERRY_AUTH_KEY"
-	if apiKey == "" {
-		apiKey = os.Getenv("CHERRY_AUTH_TOKEN")
+	if k := os.Getenv("CHERRY_AUTH_TOKEN"); k != "" {
+		key = k
 		source = "CHERRY_AUTH_TOKEN"
 	}
-	if k, ok := os.LookupEnv(apiKeyVar); ok {
-		apiKey = k
+	if k := os.Getenv("CHERRY_AUTH_KEY"); k != "" {
+		key = k
+		source = "CHERRY_AUTH_KEY"
+	}
+	if k := os.Getenv(apiKeyVar); k != "" {
+		key = k
 		source = apiKeyVar
 	}
 
-	if !data.APIToken.IsNull() {
-		apiKey = data.APIToken.ValueString()
+	if !cfg.APIToken.IsNull() {
+		key = cfg.APIToken.ValueString()
 		source = "config"
 	}
-	if !data.APIKey.IsNull() {
-		apiKey = data.APIKey.ValueString()
+	if !cfg.APIKey.IsNull() {
+		key = cfg.APIKey.ValueString()
 		source = "config"
 	}
 
-	if apiKey == "" {
-		resp.Diagnostics.AddAttributeError(
+	// Add a warning if deprecated environment variables are used.
+	if source == "CHERRY_AUTH_KEY" || source == "CHERRY_AUTH_TOKEN" {
+		diags.AddWarning(fmt.Sprintf(
+			"%s is deprecated", source,
+		),
+			fmt.Sprintf("%s is deprecated and will be removed in the next major ", source)+
+				fmt.Sprintf("version of the provider, please use %s instead.", apiKeyVar))
+	}
+
+	if key == "" {
+		diags.AddAttributeError(
 			path.Root("api_key"),
 			"Missing CherryServers API key",
 			"The provider cannot create the CherryServers API client "+
 				"as there is a missing or empty value for the CherryServers API key. "+
 				"Set the API key value in the configuration or use the "+
-				fmt.Sprintf("%s environment variable. ", apiKeyVar),
+				fmt.Sprintf("%s environment variable.", apiKeyVar),
 		)
 	}
 
-	// Add a warning if deprecated environment variables are used.
-	if source == "CHERRY_AUTH_KEY" || source == "CHERRY_AUTH_TOKEN" {
-		resp.Diagnostics.AddWarning(fmt.Sprintf(
-			"%s is deprecated", source),
-			fmt.Sprintf("%s is deprecated and will be removed in the next major ", source)+
-				fmt.Sprintf("version of the provider, please use %s instead.", apiKeyVar))
-	}
+	return key
+}
+
+func (p *CherryServersProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring CherryServers client")
+
+	var cfg CherryServersProviderModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	ctx = tflog.SetField(ctx, "cherryservers_api_key", apiKey)
+	key := apiKey(&resp.Diagnostics, cfg)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx = tflog.SetField(ctx, "cherryservers_api_key", key)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "cherryservers_api_key")
 
 	tflog.Debug(ctx, "Creating CherryServers client")
 
 	// Example client configuration for data sources and resources
 	userAgent := fmt.Sprintf("terraform-provider/cherryservers/%s terraform/%s", p.version, req.TerraformVersion)
-	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
+	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(key), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		resp.Diagnostics.AddError(
