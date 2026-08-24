@@ -111,17 +111,11 @@ func apiKey(diags *diag.Diagnostics, cfg CherryServersProviderModel) string {
 
 	// CHERRY_AUTH_TOKEN and CHERRY_AUTH_KEY are deprecated,
 	// so CHERRY_API_KEY beats them.
-	if k := os.Getenv(oldestApiKeyVar); k != "" {
-		key = k
-		source = oldestApiKeyVar
-	}
-	if k := os.Getenv(oldApiKeyVar); k != "" {
-		key = k
-		source = oldApiKeyVar
-	}
-	if k := os.Getenv(apiKeyVar); k != "" {
-		key = k
-		source = apiKeyVar
+	for _, envVar := range []string{oldestApiKeyVar, oldApiKeyVar, apiKeyVar} {
+		if k := os.Getenv(envVar); k != "" {
+			key = k
+			source = envVar
+		}
 	}
 
 	if !cfg.APIToken.IsNull() {
