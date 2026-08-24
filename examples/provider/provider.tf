@@ -6,12 +6,10 @@ terraform {
   }
 }
 
-# Set the variable value in variables.tf file.
-# Or set the CHERRY_API_KEY environment variable.
+# Set the variable value in *.tfvars file
+# or using the -var="cherry_api_key=..." CLI option
 variable "cherry_api_key" {
-  description = "Cherry servers API key"
-  type        = string
-  default     = "my_api_key_goes_here"
+  sensitive = true
 }
 
 # Configure the Cherry Servers Provider.

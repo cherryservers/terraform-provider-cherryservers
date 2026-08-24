@@ -1,17 +1,20 @@
 package provider
 
 import (
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccSSHKeyResource_basic(t *testing.T) {
+	ctx := t.Context()
 	name := "terraform_test_ssh_" + acctest.RandString(5)
 	publicKey, _, err := acctest.RandSSHKeyPair("cherryservers@ssh-acceptance-test")
 	if err != nil {
@@ -24,13 +27,13 @@ func TestAccSSHKeyResource_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCherryServersSSHKeyDestroy,
+		CheckDestroy:             checkWithContext(ctx, testAccCheckCherryServersSSHKeyDestroy),
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
 				Config: testAccSSHKeyConfig(name, publicKey),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersSSHKeyExists("cherryservers_ssh_key.test_ssh_key_ssh_key"),
+					testAccCheckCherryServersSSHKeyExists(ctx, "cherryservers_ssh_key.test_ssh_key_ssh_key"),
 					resource.TestCheckResourceAttrSet("cherryservers_ssh_key.test_ssh_key_ssh_key", "created"),
 					resource.TestCheckResourceAttrSet("cherryservers_ssh_key.test_ssh_key_ssh_key", "fingerprint"),
 					resource.TestCheckResourceAttrSet("cherryservers_ssh_key.test_ssh_key_ssh_key", "updated"),
@@ -57,7 +60,7 @@ func TestAccSSHKeyResource_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckCherryServersSSHKeyExists(resourceName string) resource.TestCheckFunc {
+func testAccCheckCherryServersSSHKeyExists(ctx context.Context, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 
@@ -74,7 +77,7 @@ func testAccCheckCherryServersSSHKeyExists(resourceName string) resource.TestChe
 		}
 
 		// Try to get the ssh key id
-		_, _, err = client.SSHKeys.Get(serverID, nil)
+		_, _, err = client.SSHKeys.Get(ctx, serverID, nil)
 		if err != nil {
 			return err
 		}
@@ -82,7 +85,7 @@ func testAccCheckCherryServersSSHKeyExists(resourceName string) resource.TestChe
 	}
 }
 
-func testAccCheckCherryServersSSHKeyDestroy(s *terraform.State) error {
+func testAccCheckCherryServersSSHKeyDestroy(ctx context.Context, s *terraform.State) error {
 	client := testCherryGoClient
 
 	for _, rs := range s.RootModule().Resources {
@@ -95,7 +98,7 @@ func testAccCheckCherryServersSSHKeyDestroy(s *terraform.State) error {
 			return fmt.Errorf("unable to convert SSH key ID")
 		}
 
-		sshKey, resp, err := client.SSHKeys.Get(sshID, nil)
+		sshKey, resp, err := client.SSHKeys.Get(ctx, sshID, nil)
 
 		if err != nil {
 			if is404Error(resp) {

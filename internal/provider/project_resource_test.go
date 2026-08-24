@@ -1,30 +1,33 @@
 package provider
 
 import (
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccProjectResource_basic(t *testing.T) {
+	ctx := t.Context()
 	teamId := os.Getenv("CHERRY_TEST_TEAM_ID")
 	name := testProjectNamePrefix + acctest.RandString(5)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCherryServersProjectDestroy,
+		CheckDestroy:             checkWithContext(ctx, testAccCheckCherryServersProjectDestroy),
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
 				Config: testAccProjectResourceConfig(name, teamId),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersProjectExists("cherryservers_project.test"),
+					testAccCheckCherryServersProjectExists(ctx, "cherryservers_project.test"),
 					resource.TestCheckResourceAttr("cherryservers_project.test", "bgp.enabled", "false"),
 					resource.TestCheckResourceAttrSet("cherryservers_project.test", "bgp.local_asn"),
 					resource.TestMatchResourceAttr("cherryservers_project.test", "id", regexp.MustCompile("[0-9]+")),
@@ -58,14 +61,14 @@ resource "cherryservers_project" "test" {
 `, name, teamId)
 }
 
-func testAccCheckCherryServersProjectExists(resourceName string) resource.TestCheckFunc {
+func testAccCheckCherryServersProjectExists(ctx context.Context, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		projectID, err := testAccGetResourceIdInt(resourceName, "project", s)
 		if err != nil {
 			return err
 		}
 
-		_, _, err = testCherryGoClient.Projects.Get(projectID, nil)
+		_, _, err = testCherryGoClient.Projects.Get(ctx, projectID, nil)
 		if err != nil {
 			return err
 		}
@@ -73,7 +76,7 @@ func testAccCheckCherryServersProjectExists(resourceName string) resource.TestCh
 	}
 }
 
-func testAccCheckCherryServersProjectDestroy(s *terraform.State) error {
+func testAccCheckCherryServersProjectDestroy(ctx context.Context, s *terraform.State) error {
 	client := testCherryGoClient
 
 	for _, rs := range s.RootModule().Resources {
@@ -86,7 +89,7 @@ func testAccCheckCherryServersProjectDestroy(s *terraform.State) error {
 			return fmt.Errorf("unable to convert Project ID")
 		}
 		// Try to get the project
-		_, resp, err := client.Projects.Get(projectID, nil)
+		_, resp, err := client.Projects.Get(ctx, projectID, nil)
 
 		if err != nil {
 			if is404Error(resp) {

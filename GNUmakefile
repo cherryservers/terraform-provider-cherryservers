@@ -4,4 +4,4 @@ default: testacc
 .PHONY: testacc
 
 testacc:
-	TF_AC=1 go test ./... -v -timeout 60m $(TESTARGS)
+	TF_ACC=1 go test ./... -v -timeout 60m $(TESTARGS)

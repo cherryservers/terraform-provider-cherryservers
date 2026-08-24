@@ -2,12 +2,10 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -109,7 +107,7 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 			Type:          types.StringValue(ip.Type),
 			Address:       types.StringValue(ip.Address),
 			AddressFamily: types.Int64Value(int64(ip.AddressFamily)),
-			CIDR:          types.StringValue(ip.Cidr),
+			CIDR:          types.StringValue(ip.CIDR),
 		}
 
 		ipTf, ipDiags := types.ObjectValueFrom(ctx, ipModel.AttributeTypes(), ipModel)
@@ -396,7 +394,8 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional: true,
 				Computed: true,
 				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. " +
-					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update.",
+					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update. " +
+					"Server private IP may change on re-install.",
 				Default: booldefault.StaticBool(false),
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
@@ -405,6 +404,64 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			}),
 		},
 	}
+}
+
+func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	var plan, state serverResourceModel
+
+	// We only care about updates for now, so return if state or plan are null.
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Private IP may change when re-installing server.
+	if isReinstall(plan, state) {
+		ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
+		diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		ipsAttrs := make([]attr.Value, 0, len(ips))
+
+		for i := range ips {
+			if ips[i].Type.ValueString() == "private-ip" {
+				ips[i].Address = types.StringUnknown()
+				ips[i].Id = types.StringUnknown()
+				ips[i].CIDR = types.StringUnknown()
+			}
+
+			ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
+			resp.Diagnostics.Append(ipDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			ipsAttrs = append(ipsAttrs, ipAttr)
+		}
+
+		ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
+		resp.Diagnostics.Append(ipsDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plan.IpAddresses = ipsTf
+	}
+
+	diags := resp.Plan.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
 }
 
 func (r *serverResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -482,7 +539,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		request.OSPartitionSize = int(data.OSPartitionSize.ValueInt64())
 	}
 
-	server, _, err := r.client.Servers.Create(request)
+	server, _, err := r.client.Servers.Create(ctx, request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to create a CherryServers server resource",
@@ -497,32 +554,16 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	err = backoff.Retry(
-		func() error {
-			stateOption := cherrygo.GetOptions{Fields: []string{"state"}}
-			s, _, e := r.client.Servers.Get(server.ID, &stateOption)
-			if e != nil {
-				return backoff.Permanent(e)
-			}
+	deployCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
-			if s.State == "pending" || s.State == "provisioning" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.State == "active" {
-				return nil
-			}
-
-			return backoff.Permanent(errors.New("failed to deploy server"))
-		}, backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(createTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+	_, _, err = r.client.Servers.WaitForStatus(deployCtx, server.ID, cherrygo.StatusDeployed)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
 	}
 
-	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	powerState, _, err := r.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
@@ -533,19 +574,19 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		Name: data.Name.ValueString(),
 	}
 
-	server, _, err = r.client.Servers.Update(server.ID, &updateRequest)
+	server, _, err = r.client.Servers.Update(ctx, server.ID, &updateRequest)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update a CherryServers server resource with name/bgp after it's creation", err.Error())
 		return
 	}
 
-	server, _, err = r.client.Servers.Get(server.ID, nil)
+	server, _, err = r.client.Servers.Get(ctx, server.ID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read a CherryServers server resource", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -574,7 +615,7 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("invalid server ID in state", err.Error())
 		return
 	}
-	server, serverGetResp, err := r.client.Servers.Get(serverID, nil)
+	server, serverGetResp, err := r.client.Servers.Get(ctx, serverID, nil)
 	if err != nil {
 		if is404Error(serverGetResp) {
 			resp.State.RemoveResource(ctx)
@@ -592,13 +633,13 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	powerState, _, err := r.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -648,7 +689,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		requestUpdate.Tags = &tagsMap
 	}
 
-	server, _, err := r.client.Servers.Update(serverID, &requestUpdate)
+	server, _, err := r.client.Servers.Update(ctx, serverID, &requestUpdate)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers server resource",
@@ -657,7 +698,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	server, _, err = r.client.Servers.Get(serverID, nil)
+	server, _, err = r.client.Servers.Get(ctx, serverID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers server resource",
@@ -666,13 +707,13 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	powerState, _, err := r.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -686,7 +727,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel, resp *resource.UpdateResponse) {
-	password, err := generatePassword()
+	password, err := cherrygo.GeneratePassword()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to generate password", err.Error(),
@@ -720,7 +761,7 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		}
 	}
 
-	server, _, err := r.client.Servers.Reinstall(serverID, requestReinstall)
+	server, _, err := r.client.Servers.Reinstall(ctx, serverID, requestReinstall)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to create a CherryServers server resource",
@@ -735,26 +776,10 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		return
 	}
 
-	err = backoff.Retry(
-		func() error {
-			statusOption := cherrygo.GetOptions{Fields: []string{"status"}}
-			s, _, e := r.client.Servers.Get(server.ID, &statusOption)
-			if e != nil {
-				return backoff.Permanent(e)
-			}
+	deployCtx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
-			if s.Status == "deploying" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.Status == "deployed" {
-				return nil
-			}
-
-			return backoff.Permanent(errors.New("server is in unknown status"))
-		}, backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(updateTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+	_, _, err = r.client.Servers.WaitForStatus(deployCtx, server.ID, cherrygo.StatusDeployed)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
@@ -773,7 +798,7 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	serverID, _ := strconv.Atoi(data.Id.ValueString())
 
-	if _, _, err := r.client.Servers.Delete(serverID); err != nil {
+	if _, err := r.client.Servers.Delete(ctx, serverID); err != nil {
 		resp.Diagnostics.AddError(
 			"unable to delete a CherryServers server resource",
 			err.Error(),
@@ -787,4 +812,14 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 func (r *serverResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func isReinstall(plan, state serverResourceModel) bool {
+	if !plan.Image.Equal(state.Image) ||
+		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
+		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
+		!plan.UserData.Equal(state.UserData) {
+		return true
+	}
+	return false
 }

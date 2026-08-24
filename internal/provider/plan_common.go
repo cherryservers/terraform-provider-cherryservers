@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -265,11 +265,11 @@ func expandSpecs(ctx context.Context, specs cherrygo.Specs) (types.Object, diag.
 	var diags = make(diag.Diagnostics, 0, diagsCap)
 
 	cpu := cpusModel{
-		Count:     types.Int64Value(int64(specs.Cpus.Count)),
-		Name:      types.StringValue(specs.Cpus.Name),
-		Cores:     types.Int64Value(int64(specs.Cpus.Cores)),
-		Frequency: types.Float64Value(float64(specs.Cpus.Frequency)),
-		Unit:      types.StringValue(specs.Cpus.Unit),
+		Count:     types.Int64Value(int64(specs.CPUs.Count)),
+		Name:      types.StringValue(specs.CPUs.Name),
+		Cores:     types.Int64Value(int64(specs.CPUs.Cores)),
+		Frequency: types.Float64Value(float64(specs.CPUs.Frequency)),
+		Unit:      types.StringValue(specs.CPUs.Unit),
 	}
 	cpuObj, d := types.ObjectValueFrom(ctx, cpusAttributeTypes(), cpu)
 	diags.Append(d...)
@@ -287,7 +287,7 @@ func expandSpecs(ctx context.Context, specs cherrygo.Specs) (types.Object, diag.
 	diags.Append(d...)
 
 	nics := nicsModel{
-		Name: types.StringValue(specs.Nics.Name),
+		Name: types.StringValue(specs.NICs.Name),
 	}
 	nicsObj, d := types.ObjectValueFrom(ctx, nicsAttributeTypes(), nics)
 	diags.Append(d...)
@@ -313,7 +313,7 @@ func expandBGP(ctx context.Context, bgp cherrygo.RegionBGP) (types.Object, diag.
 
 	m := bgpModel{
 		Hosts: hosts,
-		ASN:   types.Int64Value(int64(bgp.Asn)),
+		ASN:   types.Int64Value(int64(bgp.ASN)),
 	}
 	bgpObj, d := types.ObjectValueFrom(ctx, bgpAttributeTypes(), m)
 	diags.Append(d...)
@@ -332,7 +332,7 @@ func expandRegions(ctx context.Context, ar []cherrygo.AvailableRegions) (types.L
 		m := planRegionModel{
 			ID:         types.Int64Value(int64(v.ID)),
 			Name:       types.StringValue(v.Name),
-			RegionISO2: types.StringValue(v.RegionIso2),
+			RegionISO2: types.StringValue(v.RegionISO2),
 			StockQty:   types.Int64Value(int64(v.StockQty)),
 			SpotQty:    types.Int64Value(int64(v.SpotQty)),
 			Slug:       types.StringValue(v.Slug),

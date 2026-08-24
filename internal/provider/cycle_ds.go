@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -108,7 +108,7 @@ func (d *cycleListDS) Read(ctx context.Context, req datasource.ReadRequest, resp
 		return
 	}
 
-	cycles, _, err := d.Client().Servers.ListCycles(nil)
+	cycles, _, err := d.Client().Servers.ListCycles(ctx, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("cycle list failed", err.Error())
 		return
