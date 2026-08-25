@@ -425,7 +425,7 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	// Private IP may change when re-installing server.
-	if isReinstall(plan, state) {
+	if requiresReinstall(plan, state) {
 		ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
 		diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
 		resp.Diagnostics.Append(diags...)
@@ -662,10 +662,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
 
-	if !plan.Image.Equal(state.Image) ||
-		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
-		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
-		!plan.UserData.Equal(state.UserData) {
+	if requiresReinstall(plan, state) {
 		if !plan.AllowReinstall.ValueBool() {
 			resp.Diagnostics.AddError("allow_reinstall attribute not set",
 				"updating image, ssh_key_ids, os_partition_size or user_data, requires setting allow_reinstall to true")
@@ -814,7 +811,7 @@ func (r *serverResource) ImportState(ctx context.Context, req resource.ImportSta
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func isReinstall(plan, state serverResourceModel) bool {
+func requiresReinstall(plan, state serverResourceModel) bool {
 	if !plan.Image.Equal(state.Image) ||
 		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
 		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
