@@ -1,10 +1,12 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -25,14 +27,17 @@ func init() {
 				return fmt.Errorf("error parsing team id: %s", err)
 			}
 
-			projects, _, err := client.Projects.List(teamId, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+
+			projects, _, err := client.Projects.List(ctx, teamId, nil)
 			if err != nil {
 				return fmt.Errorf("error listing projects: %s", err)
 			}
 
 			for _, project := range projects {
 				if strings.HasPrefix(project.Name, testProjectNamePrefix) {
-					_, err = client.Projects.Delete(project.ID)
+					_, err = client.Projects.Delete(ctx, project.ID)
 					if err != nil {
 						return fmt.Errorf("error deleting project: %s", err)
 					}

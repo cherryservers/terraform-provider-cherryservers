@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -64,7 +64,7 @@ func setupClient() (*cherrygo.Client, error) {
 	}
 
 	userAgent := "terraform-provider/cherryservers/test terraform/dev"
-	args := []cherrygo.ClientOpt{cherrygo.WithAuthToken(apiKey), cherrygo.WithUserAgent(userAgent)}
+	args := []cherrygo.ClientOpt{cherrygo.WithAPIKey(apiKey), cherrygo.WithUserAgent(userAgent)}
 	client, err := cherrygo.NewClient(args...)
 	if err != nil {
 		return nil, err

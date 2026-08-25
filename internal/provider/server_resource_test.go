@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -21,6 +22,7 @@ import (
 )
 
 func TestAccServerResource_basic(t *testing.T) {
+	ctx := t.Context()
 	serverResourceName := "terraform_test_server_" + acctest.RandString(5)
 	projectName := testProjectNamePrefix + acctest.RandString(5)
 	testPlan := "B1-1-1gb-20s-shared"
@@ -29,13 +31,13 @@ func TestAccServerResource_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCherryServersServerDestroy,
+		CheckDestroy:             checkWithContext(ctx, testAccCheckCherryServersServerDestroy),
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
 				Config: testAccServerResourceConfigOnlyReq(projectName, testPlan, testRegion, serverResourceName, teamID),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersServerExists("cherryservers_server."+serverResourceName),
+					testAccCheckCherryServersServerExists(ctx, "cherryservers_server."+serverResourceName),
 					resource.TestMatchResourceAttr("cherryservers_server."+serverResourceName, "hostname", regexp.MustCompile("[a-z]+-[a-z]+")),
 					resource.TestMatchResourceAttr("cherryservers_server."+serverResourceName, "id", regexp.MustCompile("[0-9]+")),
 					resource.TestMatchResourceAttr("cherryservers_server."+serverResourceName, "ip_addresses.0.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
@@ -72,6 +74,7 @@ func TestAccServerResource_basic(t *testing.T) {
 }
 
 func TestAccServerResource_fullConfig(t *testing.T) {
+	ctx := t.Context()
 	projectName := testProjectNamePrefix + acctest.RandString(5)
 	teamID := os.Getenv("CHERRY_TEST_TEAM_ID")
 	label := "terraform_test_ssh_" + acctest.RandString(5)
@@ -82,12 +85,12 @@ func TestAccServerResource_fullConfig(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCherryServersServerDestroy,
+		CheckDestroy:             checkWithContext(ctx, testAccCheckCherryServersServerDestroy),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccServerResourceFullConfig(projectName, teamID, label, publicKey),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersServerExists("cherryservers_server.test_server_server"),
+					testAccCheckCherryServersServerExists(ctx, "cherryservers_server.test_server_server"),
 					resource.TestCheckResourceAttr("cherryservers_server.test_server_server", "image", "ubuntu_24_04_64bit"),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "id", regexp.MustCompile("[0-9]+")),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.0.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
@@ -103,7 +106,7 @@ func TestAccServerResource_fullConfig(t *testing.T) {
 			{
 				Config: testAccServerResourceFullUpdateWithReinstall(projectName, teamID, label, publicKey),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCherryServersServerExists("cherryservers_server.test_server_server"),
+					testAccCheckCherryServersServerExists(ctx, "cherryservers_server.test_server_server"),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "id", regexp.MustCompile("[0-9]+")),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.0.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
 					resource.TestMatchResourceAttr("cherryservers_server.test_server_server", "ip_addresses.1.address", regexp.MustCompile(`^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4})`)),
@@ -124,7 +127,9 @@ func TestAccServerIPXE(t *testing.T) {
 	ipxeReinstall := ipxeScript(t, filepath.Join("testdata", "alma.ipxe"))
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCherryServersServerDestroy,
+		CheckDestroy: func(s *terraform.State) error {
+			return testAccCheckCherryServersServerDestroy(t.Context(), s)
+		},
 		Steps: []resource.TestStep{
 			{
 				// Fail when iPXE image is configured with no script.
@@ -197,7 +202,7 @@ func TestAccServerIPXE(t *testing.T) {
 func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, region string) {
 	t.Helper()
 
-	plans, _, err := client.Plans.List(team, nil)
+	plans, _, err := client.Plans.List(t.Context(), team, nil)
 	if err != nil {
 		t.Fatalf("failed to list plans: %s)", err.Error())
 	}
@@ -207,10 +212,7 @@ func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, regi
 		for _, r := range p.AvailableRegions {
 			if r.StockQty > stock && slices.ContainsFunc(
 				p.Softwares, func(s cherrygo.SoftwareImage) bool {
-					if s.Image.Slug == ipxeImage {
-						return true
-					}
-					return false
+					return s.Image.Slug == ipxeImage
 				},
 			) {
 				stock = r.StockQty
@@ -237,7 +239,7 @@ func ipxeScript(t *testing.T, path string) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func testAccCheckCherryServersServerExists(resourceName string) resource.TestCheckFunc {
+func testAccCheckCherryServersServerExists(ctx context.Context, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 
@@ -254,7 +256,7 @@ func testAccCheckCherryServersServerExists(resourceName string) resource.TestChe
 		}
 
 		// Try to get the server id
-		_, _, err = client.Servers.Get(serverID, nil)
+		_, _, err = client.Servers.Get(ctx, serverID, nil)
 		if err != nil {
 			return err
 		}
@@ -262,7 +264,7 @@ func testAccCheckCherryServersServerExists(resourceName string) resource.TestChe
 	}
 }
 
-func testAccCheckCherryServersServerDestroy(s *terraform.State) error {
+func testAccCheckCherryServersServerDestroy(ctx context.Context, s *terraform.State) error {
 	client := testCherryGoClient
 
 	for _, rs := range s.RootModule().Resources {
@@ -275,7 +277,7 @@ func testAccCheckCherryServersServerDestroy(s *terraform.State) error {
 			return fmt.Errorf("unable to convert Server ID")
 		}
 
-		server, resp, err := client.Servers.Get(serverID, nil)
+		server, resp, err := client.Servers.Get(ctx, serverID, nil)
 		if err != nil {
 			if is404Error(resp) {
 				continue
