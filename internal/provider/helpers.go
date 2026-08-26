@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"strings"
+	"time"
 
 	"github.com/cherryservers/cherrygo/v4"
 )
@@ -56,4 +58,8 @@ func normalizeServerImage(ctx context.Context, server *cherrygo.Server, client *
 	}
 
 	return errors.New("could not find image slug for image with name `" + server.Image + "`")
+}
+
+func randDuration(max time.Duration) time.Duration {
+	return time.Duration(rand.Int64N(int64(max)))
 }

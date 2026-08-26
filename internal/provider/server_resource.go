@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -714,7 +715,8 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	deployCtx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	_, _, err = r.client.Servers.WaitForStatus(deployCtx, server.ID, cherrygo.StatusDeployed)
+	ticker := time.NewTicker(5*time.Second + randDuration(5*time.Second))
+	server, err = r.pollUntilTerminal(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
@@ -956,7 +958,8 @@ func (r *serverResource) reinstall(ctx context.Context, plan, config serverResou
 	deployCtx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	_, _, err = r.client.Servers.WaitForStatus(deployCtx, server.ID, cherrygo.StatusDeployed)
+	ticker := time.NewTicker(5*time.Second + randDuration(5*time.Second))
+	server, err = r.pollUntilTerminal(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
@@ -989,6 +992,40 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 func (r *serverResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func isTerminal(s cherrygo.Server) bool {
+	return slices.Contains([]string{"deployed", "allocated", "failed deployment"}, s.Status)
+}
+
+func isFailed(s cherrygo.Server) bool {
+	return s.Status == "failed deployment"
+}
+
+func (r *serverResource) pollUntilTerminal(
+	ctx context.Context,
+	server cherrygo.Server,
+	c <-chan time.Time,
+) (cherrygo.Server, error) {
+	for {
+		if isTerminal(server) {
+			break
+		}
+		select {
+		case <-c:
+			server, _, err := r.client.Servers.Get(ctx, server.ID, nil)
+			if err != nil {
+				return server, err
+			}
+		case <-ctx.Done():
+			return server, ctx.Err()
+		}
+	}
+
+	if isFailed(server) {
+		return server, fmt.Errorf("server %d deployment failed", server.ID)
+	}
+	return server, nil
 }
 
 func requiresReinstall(plan, state serverResourceModel) bool {
