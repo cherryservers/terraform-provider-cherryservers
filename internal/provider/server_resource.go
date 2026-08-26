@@ -11,6 +11,7 @@ import (
 	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -228,6 +229,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
+				},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("ssh_key_ids"),
+						path.MatchRoot("user_data"),
+						path.MatchRoot("os_partition_size"),
+					}...),
 				},
 				Sensitive: true,
 			},

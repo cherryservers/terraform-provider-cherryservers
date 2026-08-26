@@ -137,6 +137,21 @@ func TestAccServerIPXE(t *testing.T) {
 				ExpectError: regexp.MustCompile("Missing Attribute Configuration"),
 			},
 			{
+				// Fail when iPXE script is configured with user_data.
+				Config:      ipxeInvalidWithUserData,
+				ExpectError: regexp.MustCompile("Invalid Attribute Configuration"),
+			},
+			{
+				// Fail when iPXE script is configured with os_partition_size.
+				Config:      ipxeInvalidWithOSPartitionSize,
+				ExpectError: regexp.MustCompile("Invalid Attribute Configuration"),
+			},
+			{
+				// Fail when iPXE script is configured with ssh_key_ids.
+				Config:      ipxeInvalidWithSSHKeyIDs,
+				ExpectError: regexp.MustCompile("Invalid Attribute Configuration"),
+			},
+			{
 				// Succeed when valid iPXE script is provided and image is left
 				// for the provider to set.
 				Config: ipxeConfig(project, region, plan, ipxeCreate, testTeam, false),
@@ -472,3 +487,36 @@ resource "cherryservers_server" "ipxe_test" {
 }
 `, projectName, team, region, plan, allowReinstall)
 }
+
+const (
+	ipxeInvalidWithUserData =
+`
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  user_data = "test"
+  project_id = 1
+  ipxe = "test"
+}
+`
+	ipxeInvalidWithOSPartitionSize =
+`
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  os_partition_size = 1
+  project_id = 1
+  ipxe = "test"
+}
+`
+	ipxeInvalidWithSSHKeyIDs =
+`
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  ssh_key_ids = [ "1" ]
+  project_id = 1
+  ipxe = "test"
+}
+`
+)
