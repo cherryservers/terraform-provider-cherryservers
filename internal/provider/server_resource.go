@@ -578,17 +578,13 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		plan.IpAddresses = ipsTf
 	}
 
-	// This state is prohibited by configuration validators, but can occur when
-	// a server resource is imported. If image is set to an iPXE image, but there's no iPXE
-	// script, try to replace the image with some default OS image. Configuration and plan conflicts
-	// won't happen, because configuring iPXE image with no script is not allowed by the validators.
+	// If we need to reinstall an iPXE server into a non-iPXE server, we may need
+	// to find a default image, if the user didn't configure one.
 	if requiresReinstall(plan, state) && plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
 		serverPlan := plan.Plan
 
-		// Re-installation requires an image, so try to find a default,
-		// if the user didn't configure it explicitly.
 		if config.Image.IsNull() {
-			resp.Diagnostics.Append(r.tryReinstallImageModify(ctx, serverPlan, &plan)...)
+			resp.Diagnostics.Append(r.modifyImage(ctx, serverPlan, &plan)...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
@@ -599,22 +595,30 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r *serverResource) tryReinstallImageModify(ctx context.Context, serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
+func (r *serverResource) modifyImage(ctx context.Context, serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
 	var d diag.Diagnostics
 
 	// Set image to unknown, so that there are no conflicts if we try to set it
 	// during execution, when the plan is guaranteed to be known.
-	plan.Image = types.StringUnknown()
+	// plan.Image = types.StringUnknown()
 
-	if !serverPlan.IsUnknown() {
-		img, err := r.defaultImage(ctx, serverPlan.ValueString())
-		if err != nil {
-			d.AddError("No Default Plan Image",
-				fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
-			return d
-		}
-		plan.Image = types.StringValue(img)
+	img, err := r.defaultImage(ctx, serverPlan.ValueString())
+	if err != nil {
+		d.AddError("No Default Plan Image",
+			fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
+		return d
 	}
+	plan.Image = types.StringValue(img)
+
+	// if !serverPlan.IsUnknown() {
+	// 	img, err := r.defaultImage(ctx, serverPlan.ValueString())
+	// 	if err != nil {
+	// 		d.AddError("No Default Plan Image",
+	// 			fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
+	// 		return d
+	// 	}
+	// 	plan.Image = types.StringValue(img)
+	// }
 	return d
 }
 
@@ -921,17 +925,6 @@ func (r *serverResource) reinstall(ctx context.Context, plan, config serverResou
 			requestReinstall.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
-			return
-		}
-	}
-
-	// This is a state that can occur if the server resource was imported.
-	// We can't re-install with an iPXE image, because we don't know the script value.
-	// Try to find some default image, if the user didn't configure it.
-	if requestReinstall.Image == ipxeImage && plan.IPXE.IsNull() && config.Image.IsNull() {
-		requestReinstall.Image, err = r.defaultImage(ctx, plan.Plan.String())
-		if err != nil {
-			resp.Diagnostics.AddError("failed to find default plan image", err.Error())
 			return
 		}
 	}
