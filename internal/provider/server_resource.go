@@ -1036,7 +1036,7 @@ func (r *serverResource) pollUntilActive(
 	server cherrygo.Server,
 	c <-chan time.Time,
 ) (cherrygo.Server, error) {
-	for server.State != "active" {
+	for server.State != "active" && !isFailed(server) {
 		select {
 		case <-c:
 			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
@@ -1047,6 +1047,10 @@ func (r *serverResource) pollUntilActive(
 		case <-ctx.Done():
 			return server, ctx.Err()
 		}
+	}
+
+	if isFailed(server) {
+		return server, fmt.Errorf("server %d deployment failed", server.ID)
 	}
 	return server, nil
 }
