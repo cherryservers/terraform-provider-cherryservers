@@ -1033,7 +1033,8 @@ func requiresReinstall(plan, state serverResourceModel) bool {
 	if !plan.Image.Equal(state.Image) ||
 		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
 		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
-		!plan.UserData.Equal(state.UserData) {
+		!plan.UserData.Equal(state.UserData) ||
+		!plan.IPXE.Equal(state.IPXE) {
 		return true
 	}
 	return false
