@@ -598,10 +598,6 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 func (r *serverResource) modifyImage(ctx context.Context, serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
 	var d diag.Diagnostics
 
-	// Set image to unknown, so that there are no conflicts if we try to set it
-	// during execution, when the plan is guaranteed to be known.
-	// plan.Image = types.StringUnknown()
-
 	img, err := r.defaultImage(ctx, serverPlan.ValueString())
 	if err != nil {
 		d.AddError("No Default Plan Image",
@@ -610,15 +606,6 @@ func (r *serverResource) modifyImage(ctx context.Context, serverPlan types.Strin
 	}
 	plan.Image = types.StringValue(img)
 
-	// if !serverPlan.IsUnknown() {
-	// 	img, err := r.defaultImage(ctx, serverPlan.ValueString())
-	// 	if err != nil {
-	// 		d.AddError("No Default Plan Image",
-	// 			fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
-	// 		return d
-	// 	}
-	// 	plan.Image = types.StringValue(img)
-	// }
 	return d
 }
 
