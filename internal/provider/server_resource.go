@@ -544,38 +544,10 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		// Power state can be unpredictable when re-installing.
 		plan.PowerState = types.StringUnknown()
 
-		ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
-		diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
-		resp.Diagnostics.Append(diags...)
+		resp.Diagnostics.Append(modifyPrivateIP(ctx, &plan)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-
-		ipsAttrs := make([]attr.Value, 0, len(ips))
-
-		for i := range ips {
-			if ips[i].Type.ValueString() == "private-ip" {
-				ips[i].Address = types.StringUnknown()
-				ips[i].Id = types.StringUnknown()
-				ips[i].CIDR = types.StringUnknown()
-			}
-
-			ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
-			resp.Diagnostics.Append(ipDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			ipsAttrs = append(ipsAttrs, ipAttr)
-		}
-
-		ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
-		resp.Diagnostics.Append(ipsDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		plan.IpAddresses = ipsTf
 	}
 
 	// If we need to reinstall an iPXE server into a non-iPXE server, we may need
@@ -593,6 +565,44 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 
 	diags := resp.Plan.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
+}
+
+func modifyPrivateIP(ctx context.Context, plan *serverResourceModel) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
+	diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
+	d.Append(diags...)
+	if d.HasError() {
+		return d
+	}
+
+	ipsAttrs := make([]attr.Value, 0, len(ips))
+
+	for i := range ips {
+		if ips[i].Type.ValueString() == "private-ip" {
+			ips[i].Address = types.StringUnknown()
+			ips[i].Id = types.StringUnknown()
+			ips[i].CIDR = types.StringUnknown()
+		}
+
+		ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
+		d.Append(ipDiags...)
+		if d.HasError() {
+			return d
+		}
+
+		ipsAttrs = append(ipsAttrs, ipAttr)
+	}
+
+	ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
+	d.Append(ipsDiags...)
+	if d.HasError() {
+		return d
+	}
+
+	plan.IpAddresses = ipsTf
+	return d
 }
 
 func (r *serverResource) modifyImage(ctx context.Context, serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
