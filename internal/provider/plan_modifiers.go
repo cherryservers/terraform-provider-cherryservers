@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -89,9 +90,12 @@ func (d useStateIfNoConfigurationChangesModifier) PlanModifyString(ctx context.C
 	resp.PlanValue = req.StateValue
 }
 
-var _ planmodifier.String = warnIfChangedModifier{}
-var _ planmodifier.Set = warnIfChangedModifier{}
-var _ planmodifier.Int64 = warnIfChangedModifier{}
+var (
+	_ planmodifier.String = warnIfChangedModifier{}
+	_ planmodifier.Set    = warnIfChangedModifier{}
+	_ planmodifier.Int64  = warnIfChangedModifier{}
+	_ planmodifier.Bool   = warnIfChangedModifier{}
+)
 
 // WarnIfChangedString returns a plan modifier that displays a warning if an attribute will be changed on update.
 func WarnIfChangedString(warningSummary, warningDetail string) planmodifier.String {
@@ -111,6 +115,13 @@ func WarnIfChangedSet(warningSummary, warningDetail string) planmodifier.Set {
 
 // WarnIfChangedInt64 returns a plan modifier that displays a warning if an attribute will be changed on update.
 func WarnIfChangedInt64(warningSummary, warningDetail string) planmodifier.Int64 {
+	return warnIfChangedModifier{
+		warningSummary: warningSummary,
+		warningDetail:  warningDetail,
+	}
+}
+
+func WarnIfChangedBool(warningSummary, warningDetail string) planmodifier.Bool {
 	return warnIfChangedModifier{
 		warningSummary: warningSummary,
 		warningDetail:  warningDetail,
@@ -159,6 +170,20 @@ func (d warnIfChangedModifier) PlanModifySet(ctx context.Context, req planmodifi
 }
 
 func (d warnIfChangedModifier) PlanModifyInt64(ctx context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+	// Ignore create or destroy cases.
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	// Ignore if attribute has not changed.
+	if req.PlanValue.Equal(req.StateValue) {
+		return
+	}
+
+	resp.Diagnostics.AddAttributeWarning(req.Path, d.warningSummary, d.warningDetail)
+}
+
+func (d warnIfChangedModifier) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
 	// Ignore create or destroy cases.
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return

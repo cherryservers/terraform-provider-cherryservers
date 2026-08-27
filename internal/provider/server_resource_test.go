@@ -165,9 +165,14 @@ func TestAccServerIPXE(t *testing.T) {
 				ExpectError: regexp.MustCompile("Attribute .* cannot be specified"),
 			},
 			{
+				// Fail when persist_ipxe is configured without iPXE script.
+				Config:      persistIPXEWithoutIPXE,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+			{
 				// Succeed when valid iPXE script is provided and image is left
 				// for the provider to set.
-				Config: ipxeConfig(project, region, plan, ipxeCreate, testTeam, false),
+				Config: ipxeConfig(region, plan, ipxeCreate, testTeam, false, false),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectKnownValue(
@@ -181,12 +186,17 @@ func TestAccServerIPXE(t *testing.T) {
 			},
 			{
 				// Fail when updating iPXE script, but allow_reinstall is not enabled.
-				Config:      ipxeConfig(project, region, plan, ipxeReinstall, testTeam, false),
+				Config:      ipxeConfig(region, plan, ipxeReinstall, testTeam, false, false),
 				ExpectError: regexp.MustCompile("allow_reinstall attribute not set"),
 			},
 			{
-				// Succeed when reinstalling with a new iPXE script.
-				Config: ipxeConfig(project, region, plan, ipxeReinstall, testTeam, true),
+				// Fail when updating persist_ipxe, but allow_reinstall is not enabled.
+				Config:      ipxeConfig(region, plan, ipxeReinstall, testTeam, false, true),
+				ExpectError: regexp.MustCompile("allow_reinstall attribute not set"),
+			},
+			{
+				// Succeed when reinstalling with a new iPXE script and persist_ipxe.
+				Config: ipxeConfig(region, plan, ipxeReinstall, testTeam, true, true),
 			},
 			{
 				// Fail when a standard image is configured along with an iPXE script.
@@ -432,7 +442,7 @@ resource "cherryservers_server" "test_server_server" {
 `, projectName, teamID, sshKeyLabel, sshKeyPublicKey)
 }
 
-func ipxeConfig(projectName, region, plan, ipxe string, team int, allowReinstall bool) string {
+func ipxeConfig(region, plan, ipxe string, team int, allowReinstall, persistIPXE bool) string {
 	return fmt.Sprintf(`
 resource "cherryservers_project" "test_server_project" {
   name = "%s"
@@ -444,9 +454,10 @@ resource "cherryservers_server" "ipxe_test" {
   plan = "%s"
   project_id = "${cherryservers_project.test_server_project.id}"
   ipxe = "%s"
+  persist_ipxe = %t
   allow_reinstall = %t
 }
-`, projectName, team, region, plan, ipxe, allowReinstall)
+`, testProjectNamePrefix+"ipxe", team, region, plan, ipxe, persistIPXE, allowReinstall)
 }
 
 func ipxeOnlyImageConfig(projectName, region, plan, image string, team int, allowReinstall bool) string {
@@ -533,6 +544,14 @@ resource "cherryservers_server" "ipxe_test" {
   ssh_key_ids = [ "1" ]
   project_id = 1
   ipxe = "test"
+}
+`
+	persistIPXEWithoutIPXE = `
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  project_id = 1
+  persist_ipxe = true
 }
 `
 )

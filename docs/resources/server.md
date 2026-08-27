@@ -56,7 +56,7 @@ resource "cherryservers_server" "server" {
 
 ### Optional
 
-- `allow_reinstall` (Boolean) Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size`, `user_data` or `ipxe`. WARNING: The reinstall will be triggered even if Terraform reports an in-place update. Server private IP may change on re-install.
+- `allow_reinstall` (Boolean) Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size`, `user_data`, `ipxe` or `persist_ipxe` attributes. WARNING: The reinstall will be triggered even if Terraform reports an in-place update. Server private IP may change on re-install.
 - `cycle` (String) Server billing cycle slug. Default is 'hourly.
 - `discount_code` (String) Server discount code.
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
@@ -66,6 +66,7 @@ resource "cherryservers_server" "server" {
 - `ipxe` (String, Sensitive) Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. Updating this attribute requires a server re-install. Note that not all server plans support iPXE, use the plan/plans data sources to check supported OS images.
 - `name` (String) Name of the server.
 - `os_partition_size` (Number) OS partition size in GB. Updating this attribute requires a server re-install.
+- `persist_ipxe` (Boolean) Enable persisting the universal iPXE image between server boots. See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers.
 - `spot_instance` (Boolean) If True, provisions the server as a spot instance.
 - `ssh_key_ids` (Set of String) Set of the SSH key IDs allowed to SSH to the server. Updating this attribute requires a server re-install.
 - `tags` (Map of String) Key/value metadata for server tagging.
