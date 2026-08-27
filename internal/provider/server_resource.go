@@ -548,6 +548,12 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		if resp.Diagnostics.HasError() {
 			return
 		}
+
+		// Ensure we don't pass SSH keys, when reinstalling non-iPXE -> iPXE,
+		// since SSH keys use state, if unconfigured.
+		if !plan.IPXE.IsNull() && state.Image.ValueString() != ipxeImage {
+			plan.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{})
+		}
 	}
 
 	// If we need to reinstall an iPXE server into a non-iPXE server, we may need

@@ -443,11 +443,17 @@ resource "cherryservers_project" "test_server_project" {
   team_id = "%d"
 }
 
+resource "cherryservers_ssh_key" "test_server_ssh_key" {
+  name = "test-key"
+  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMSagPMjsdBnJ1CsF+ChdfnqZK3wc1n8m6MSRy7CK2Dz key-1787825911386"
+}
+
 resource "cherryservers_server" "ipxe_test" {
   region = "%s" 
   plan = "%s"
   project_id = "${cherryservers_project.test_server_project.id}"
   image = "%s"
+  ssh_key_ids = ["${cherryservers_ssh_key.test_server_ssh_key.id}"]
   allow_reinstall = %t
 }
 `, projectName, team, region, plan, image, allowReinstall)
