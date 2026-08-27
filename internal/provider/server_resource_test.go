@@ -182,7 +182,12 @@ func TestAccServerIPXE(t *testing.T) {
 						),
 					},
 				},
-				Check: resource.TestCheckResourceAttr(resourceName, "image", ipxeImage),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "image", ipxeImage),
+					resource.TestMatchTypeSetElemNestedAttrs(resourceName, "ip_addresses.*", map[string]*regexp.Regexp{
+						"address_family": regexp.MustCompile("^6$"),
+					}),
+				),
 			},
 			{
 				// Fail when updating iPXE script, but allow_reinstall is not enabled.
@@ -240,6 +245,10 @@ func TestAccServerIPXE(t *testing.T) {
 func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, region string) {
 	t.Helper()
 
+	// Provisioning bare-metal servers is expensive and slow, so we'll fold IPv6 tests
+	// into iPXE tests.
+	ip6Regions := []string{"SG-Singapore", "DE-Frankfurt", "SE-Stockholm", "US-Chicago"}
+
 	plans, _, err := client.Plans.List(t.Context(), team, nil)
 	if err != nil {
 		t.Fatalf("failed to list plans: %s)", err.Error())
@@ -252,7 +261,7 @@ func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, regi
 				p.Softwares, func(s cherrygo.SoftwareImage) bool {
 					return s.Image.Slug == ipxeImage
 				},
-			) {
+			) && slices.Contains(ip6Regions, r.Slug) {
 				stock = r.StockQty
 				plan = p.Slug
 				region = r.Slug
@@ -261,7 +270,7 @@ func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, regi
 	}
 
 	if plan == "" || region == "" {
-		t.Fatalf("failed to find ipxe plan with any stock %d", stock)
+		t.Fatalf("failed to find ipxe plan in ipv6 supported region with any stock %d", stock)
 	}
 	return
 }
@@ -456,6 +465,7 @@ resource "cherryservers_server" "ipxe_test" {
   ipxe = "%s"
   persist_ipxe = %t
   allow_reinstall = %t
+  configure_ipv6 = true
 }
 `, testProjectNamePrefix+"ipxe", team, region, plan, ipxe, persistIPXE, allowReinstall)
 }
@@ -479,6 +489,7 @@ resource "cherryservers_server" "ipxe_test" {
   image = "%s"
   ssh_key_ids = ["${cherryservers_ssh_key.test_server_ssh_key.id}"]
   allow_reinstall = %t
+  configure_ipv6 = true
 }
 `, projectName, team, region, plan, image, allowReinstall)
 }
@@ -497,6 +508,7 @@ resource "cherryservers_server" "ipxe_test" {
   ipxe = "%s"
   image = "%s"
   allow_reinstall = %t
+  configure_ipv6 = true
 }
 `, projectName, team, region, plan, ipxe, image, allowReinstall)
 }
