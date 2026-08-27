@@ -60,6 +60,7 @@ func normalizeServerImage(ctx context.Context, server *cherrygo.Server, client *
 	return errors.New("could not find image slug for image with name `" + server.Image + "`")
 }
 
-func randDuration(max time.Duration) time.Duration {
-	return time.Duration(rand.Int64N(int64(max)))
+// randDurationN returns a random duration [0,n).
+func randDurationN(n time.Duration) time.Duration {
+	return time.Duration(rand.Int64N(int64(n)))
 }

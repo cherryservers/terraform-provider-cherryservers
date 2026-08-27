@@ -727,7 +727,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	deployCtx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	ticker := time.NewTicker(5*time.Second + randDuration(5*time.Second))
+	ticker := time.NewTicker(5*time.Second + randDurationN(5*time.Second))
 	server, err = r.pollUntilActive(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
@@ -840,7 +840,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 			return
 		}
 
-		r.reinstall(ctx, plan, config, resp)
+		r.reinstall(ctx, plan, resp)
 
 	}
 
@@ -894,7 +894,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *serverResource) reinstall(ctx context.Context, plan, config serverResourceModel, resp *resource.UpdateResponse) {
+func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel, resp *resource.UpdateResponse) {
 	password, err := cherrygo.GeneratePassword()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -959,8 +959,8 @@ func (r *serverResource) reinstall(ctx context.Context, plan, config serverResou
 	deployCtx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	ticker := time.NewTicker(5*time.Second + randDuration(5*time.Second))
-	server, err = r.pollUntilTerminal(deployCtx, server, ticker.C)
+	ticker := time.NewTicker(5*time.Second + randDurationN(5*time.Second))
+	_, err = r.pollUntilTerminal(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
@@ -1003,16 +1003,13 @@ func isFailed(s cherrygo.Server) bool {
 	return s.Status == "failed deployment"
 }
 
-// for server reinstallation
+// for server reinstallation.
 func (r *serverResource) pollUntilTerminal(
 	ctx context.Context,
 	server cherrygo.Server,
 	c <-chan time.Time,
 ) (cherrygo.Server, error) {
-	for {
-		if isTerminal(server) {
-			break
-		}
+	for !isTerminal(server) {
 		select {
 		case <-c:
 			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
@@ -1031,16 +1028,13 @@ func (r *serverResource) pollUntilTerminal(
 	return server, nil
 }
 
-// for server creation
+// for server creation.
 func (r *serverResource) pollUntilActive(
 	ctx context.Context,
 	server cherrygo.Server,
 	c <-chan time.Time,
 ) (cherrygo.Server, error) {
-	for {
-		if server.State == "active" {
-			break
-		}
+	for server.State != "active" {
 		select {
 		case <-c:
 			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
