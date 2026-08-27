@@ -88,7 +88,7 @@ jobs:
 
       - run: go mod download
       - env:
-          CHERRY_AUTH_KEY: ${{secrets.CHERRY_AUTH_KEY}}
+          CHERRY_API_KEY: ${{secrets.CHERRY_AUTH_KEY}}
           CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
           # The sweep flag requires a region for each client, but we don't use that,
           # so just pass "no-region".
