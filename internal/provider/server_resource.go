@@ -1014,10 +1014,11 @@ func (r *serverResource) pollUntilTerminal(
 		}
 		select {
 		case <-c:
-			server, _, err := r.client.Servers.Get(ctx, server.ID, nil)
+			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
 			if err != nil {
 				return server, err
 			}
+			server = polled
 		case <-ctx.Done():
 			return server, ctx.Err()
 		}
