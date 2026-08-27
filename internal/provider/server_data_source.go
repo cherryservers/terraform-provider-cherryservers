@@ -166,6 +166,10 @@ func (d *serverDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							Description: "CIDR of the IP address.",
 							Computed:    true,
 						},
+						"vlan_id": schema.Int64Attribute{
+							Description: "VLAN ID of a private address.",
+							Computed:    true,
+						},
 					},
 				},
 			},
