@@ -728,7 +728,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	defer cancel()
 
 	ticker := time.NewTicker(5*time.Second + randDuration(5*time.Second))
-	server, err = r.pollUntilTerminal(deployCtx, server, ticker.C)
+	server, err = r.pollUntilActive(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
@@ -1003,6 +1003,7 @@ func isFailed(s cherrygo.Server) bool {
 	return s.Status == "failed deployment"
 }
 
+// for server reinstallation
 func (r *serverResource) pollUntilTerminal(
 	ctx context.Context,
 	server cherrygo.Server,
@@ -1026,6 +1027,30 @@ func (r *serverResource) pollUntilTerminal(
 
 	if isFailed(server) {
 		return server, fmt.Errorf("server %d deployment failed", server.ID)
+	}
+	return server, nil
+}
+
+// for server creation
+func (r *serverResource) pollUntilActive(
+	ctx context.Context,
+	server cherrygo.Server,
+	c <-chan time.Time,
+) (cherrygo.Server, error) {
+	for {
+		if server.State == "active" {
+			break
+		}
+		select {
+		case <-c:
+			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
+			if err != nil {
+				return server, err
+			}
+			server = polled
+		case <-ctx.Done():
+			return server, ctx.Err()
+		}
 	}
 	return server, nil
 }
