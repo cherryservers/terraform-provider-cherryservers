@@ -75,17 +75,20 @@ func setupClient() (*cherrygo.Client, error) {
 }
 
 func TestMain(m *testing.M) {
-	var err error
-	testCherryGoClient, err = setupClient()
-	if err != nil {
-		log.Fatalf("failed to initialize api client: %s", err.Error())
-	}
+	// Skip setup on unit tests.
+	if acc := os.Getenv(resource.EnvTfAcc); acc != "" {
+		var err error
+		testCherryGoClient, err = setupClient()
+		if err != nil {
+			log.Fatalf("failed to initialize api client: %s", err.Error())
+		}
 
-	err = setTestTeam()
-	if err != nil {
-		log.Fatalf("failed to get test team: %s", err.Error())
-	}
+		err = setTestTeam()
+		if err != nil {
+			log.Fatalf("failed to get test team: %s", err.Error())
+		}
 
+	}
 	resource.TestMain(m)
 }
 

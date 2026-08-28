@@ -120,6 +120,11 @@ func TestAccServerResource_fullConfig(t *testing.T) {
 }
 
 func TestAccServerIPXE(t *testing.T) {
+	// We need an API key for setup, so skip early if it's not an acceptance test.
+	if acc := os.Getenv(resource.EnvTfAcc); acc == "" {
+		t.Skip("skipping ipxe acceptance test, since TF_ACC is not set")
+	}
+
 	const resourceName = "cherryservers_server.ipxe_test"
 	project := testProjectNamePrefix + "ipxe"
 	plan, region := ipxePlanRegion(t, testCherryGoClient, testTeam)
