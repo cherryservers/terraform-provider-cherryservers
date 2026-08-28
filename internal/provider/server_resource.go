@@ -843,6 +843,9 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		}
 
 		r.reinstall(ctx, plan, resp)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 	}
 
