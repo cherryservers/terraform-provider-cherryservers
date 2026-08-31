@@ -140,6 +140,11 @@ func TestAccServerIPXE(t *testing.T) {
 
 	const resourceName = "cherryservers_server.ipxe_test"
 	project := testProjectNamePrefix + acctest.RandString(5)
+	publicKey, _, err := acctest.RandSSHKeyPair("cherryservers@ssh-acceptance-test")
+	if err != nil {
+		t.Fatalf("Cannot generate test SSH key pair: %s", err)
+	}
+	sshName := "terraform_test_" + acctest.RandString(5)
 	plan, region := ipxePlanRegion(t, testCherryGoClient, testTeam)
 	ipxeCreate := ipxeScript(t, filepath.Join("testdata", "ubuntu.ipxe"))
 	ipxeReinstall := ipxeScript(t, filepath.Join("testdata", "alma.ipxe"))
@@ -151,7 +156,7 @@ func TestAccServerIPXE(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Fail when iPXE image is configured with no script.
-				Config:      ipxeOnlyImageConfig(project, region, plan, ipxeImage, testTeam, false),
+				Config:      ipxeOnlyImageConfig(project, sshName, publicKey, region, plan, ipxeImage, testTeam, false),
 				ExpectError: regexp.MustCompile("Missing Attribute Configuration"),
 			},
 			{
@@ -215,7 +220,7 @@ func TestAccServerIPXE(t *testing.T) {
 			},
 			{
 				// Succeed when reinstalling an iPXE server into one with a standard image.
-				Config: ipxeOnlyImageConfig(project, region, plan, defaultTestImage, testTeam, true),
+				Config: ipxeOnlyImageConfig(project, sshName, publicKey, region, plan, defaultTestImage, testTeam, true),
 			},
 			{
 				// Succeed when reinstalling a server with a standard image into one with iPXE
@@ -475,7 +480,7 @@ resource "cherryservers_server" "ipxe_test" {
 `, project, team, region, plan, ipxe, persistIPXE, allowReinstall)
 }
 
-func ipxeOnlyImageConfig(projectName, region, plan, image string, team int, allowReinstall bool) string {
+func ipxeOnlyImageConfig(projectName, sshName, key, region, plan, image string, team int, allowReinstall bool) string {
 	return fmt.Sprintf(`
 resource "cherryservers_project" "test_server_project" {
   name = "%s"
@@ -483,8 +488,8 @@ resource "cherryservers_project" "test_server_project" {
 }
 
 resource "cherryservers_ssh_key" "test_server_ssh_key" {
-  name = "test-key"
-  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMSagPMjsdBnJ1CsF+ChdfnqZK3wc1n8m6MSRy7CK2Dz key-1787825911386"
+  name = "%s"
+  public_key = "%s"
 }
 
 resource "cherryservers_server" "ipxe_test" {
@@ -496,7 +501,7 @@ resource "cherryservers_server" "ipxe_test" {
   allow_reinstall = %t
   configure_ipv6 = true
 }
-`, projectName, team, region, plan, image, allowReinstall)
+`, projectName, team, sshName, key, region, plan, image, allowReinstall)
 }
 
 func ipxeWithImageConfig(projectName, region, plan, image, ipxe string, team int, allowReinstall bool) string {
