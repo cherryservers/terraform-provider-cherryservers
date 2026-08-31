@@ -32,11 +32,11 @@ jobs:
       matrix:
         include:
           - tool: opentofu
-            version: v1.10.x
-          - tool: terraform
-            version: v1.13.x
+            version: v1.12.x
           - tool: terraform
             version: v1.14.x
+          - tool: terraform
+            version: v1.15.x
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -66,11 +66,27 @@ jobs:
 
       - run: go mod download
       - env:
-          TF_ACC: "1"
-          CHERRY_AUTH_KEY: ${{secrets.CHERRY_AUTH_KEY}}
+          CHERRY_API_KEY: ${{secrets.CHERRY_AUTH_KEY}}
           CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
-        run: go test -v ./internal/provider/ -coverprofile=coverage.txt -parallel=1 -timeout=90m
+          TESTARGS: "-coverprofile=coverage.txt"
+        run: make testacc
 
       - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  sweep:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - run: go mod download
+      - env:
+          CHERRY_API_KEY: ${{secrets.CHERRY_AUTH_KEY}}
+          CHERRY_TEST_TEAM_ID: ${{secrets.CHERRY_TEST_TEAM_ID}}
+        run: make sweep

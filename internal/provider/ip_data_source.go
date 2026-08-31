@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -154,7 +154,7 @@ func (d *ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, res
 
 	var ipID string
 	if state.ProjectId.ValueInt64() != 0 {
-		ipAddresses, _, err := d.client.IPAddresses.List(int(state.ProjectId.ValueInt64()), nil)
+		ipAddresses, _, err := d.client.IPAddresses.List(ctx, int(state.ProjectId.ValueInt64()), nil)
 		if err != nil {
 			resp.Diagnostics.AddError("couldn't retrieve project IP addresses", err.Error())
 			return
@@ -169,7 +169,7 @@ func (d *ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, res
 		ipID = state.Id.ValueString()
 	}
 
-	ip, _, err := d.client.IPAddresses.Get(ipID, nil)
+	ip, _, err := d.client.IPAddresses.Get(ctx, ipID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error: unable to read a CherryServers IP data source",

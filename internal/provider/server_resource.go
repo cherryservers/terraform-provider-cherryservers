@@ -2,14 +2,17 @@ package provider
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/cherryservers/cherrygo/v3"
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -20,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -30,10 +34,14 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                = &serverResource{}
-	_ resource.ResourceWithConfigure   = &serverResource{}
-	_ resource.ResourceWithImportState = &serverResource{}
+	_ resource.Resource                   = &serverResource{}
+	_ resource.ResourceWithConfigure      = &serverResource{}
+	_ resource.ResourceWithImportState    = &serverResource{}
+	_ resource.ResourceWithModifyPlan     = &serverResource{}
+	_ resource.ResourceWithValidateConfig = &serverResource{}
 )
+
+const ipxeImage = "custom_ipxe_install"
 
 func NewServerResource() resource.Resource {
 	return &serverResource{}
@@ -54,8 +62,11 @@ type serverResourceModel struct {
 	Image               types.String   `tfsdk:"image"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
+	ConfigureIPv6       types.Bool     `tfsdk:"configure_ipv6"`
 	IPAddressesIds      types.Set      `tfsdk:"ip_addresses_ids"`
 	UserData            types.String   `tfsdk:"user_data"`
+	IPXE                types.String   `tfsdk:"ipxe"`
+	PersistIPXE         types.Bool     `tfsdk:"persist_ipxe"`
 	Tags                types.Map      `tfsdk:"tags"`
 	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
 	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
@@ -108,7 +119,12 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 			Type:          types.StringValue(ip.Type),
 			Address:       types.StringValue(ip.Address),
 			AddressFamily: types.Int64Value(int64(ip.AddressFamily)),
-			CIDR:          types.StringValue(ip.Cidr),
+			CIDR:          types.StringValue(ip.CIDR),
+			VLAN:          types.Int64Null(),
+		}
+
+		if ip.Type == "private-ip" {
+			ipModel.VLAN = types.Int64Value(int64(ip.VLANID))
 		}
 
 		ipTf, ipDiags := types.ObjectValueFrom(ctx, ipModel.AttributeTypes(), ipModel)
@@ -147,6 +163,7 @@ type ipAddressFlatResourceModel struct {
 	Address       types.String `tfsdk:"address"`
 	AddressFamily types.Int64  `tfsdk:"address_family"`
 	CIDR          types.String `tfsdk:"cidr"`
+	VLAN          types.Int64  `tfsdk:"vlan_id"`
 }
 
 func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
@@ -156,6 +173,7 @@ func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
 		"address":        types.StringType,
 		"address_family": types.Int64Type,
 		"cidr":           types.StringType,
+		"vlan_id":        types.Int64Type,
 	}
 }
 
@@ -164,6 +182,13 @@ func (r *serverResource) Metadata(ctx context.Context, req resource.MetadataRequ
 }
 
 func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	const (
+		warnReinstallSummary = "Server re-install required."
+		warnReinstallDetail  = "You are updating attributes that require a server re-install." +
+			" This will wipe all of your data and may take awhile." +
+			" Requires `allow_reinstall to be set to `true`."
+	)
+
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
 		Description: "Provides a Cherry Servers server resource. This can be used to create, read, modify, and delete servers on your Cherry Servers account.",
@@ -206,16 +231,46 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"ipxe": schema.StringAttribute{
+				Description: "Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. " +
+					"Updating this attribute requires a server re-install. " +
+					"Note that not all server plans support iPXE, use the plan/plans data sources " +
+					"to check supported OS images.",
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
+				},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("ssh_key_ids"),
+						path.MatchRoot("user_data"),
+						path.MatchRoot("os_partition_size"),
+					}...),
+				},
+				Sensitive: true,
+			},
+			"persist_ipxe": schema.BoolAttribute{
+				Description: "Enable persisting the universal iPXE image between server boots. See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers.",
+				Optional:    true,
+				Validators: []validator.Bool{
+					boolvalidator.AlsoRequires(path.MatchRoot("ipxe")),
+				},
+				PlanModifiers: []planmodifier.Bool{
+					WarnIfChangedBool(warnReinstallSummary, warnReinstallDetail),
+				},
+			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the server operating system. " +
+					"Updating this attribute requires a server re-install. " +
+					"If iPXE is used, this must be set to `" + ipxeImage +
+					"` or left unconfigured, in which case the provider will set the " +
+					"correct image. " +
 					"Updating this attribute requires a server re-install.",
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					WarnIfChangedString("Server re-install required.",
-						"You are updating attributes that require a server re-install."+
-							" This will wipe all of your data and may take awhile."),
+					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
@@ -226,9 +281,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
-					WarnIfChangedSet("Server re-install required.",
-						"You are updating attributes that require a server re-install."+
-							" This will wipe all of your data and may take awhile."),
+					WarnIfChangedSet(warnReinstallSummary, warnReinstallDetail),
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
@@ -242,6 +295,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					setvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("ip_addresses_ids"),
 					}...),
+				},
+			},
+			"configure_ipv6": schema.BoolAttribute{
+				Description: "Enable IPv6 when supported; ignored otherwise. See https://www.cherryservers.com/knowledge/docs/networking/ip-addressing/ipv6.",
+				Optional:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
 				},
 			},
 			"ip_addresses_ids": schema.SetAttribute{
@@ -258,10 +318,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"Updating this attribute requires a server re-install.",
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
-					WarnIfChangedString("Server re-install required.",
-						"You are updating attributes that require a server re-install."+
-							" This will wipe all of your data and may take awhile."),
+					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
 				},
+				Sensitive: true,
 			},
 			"tags": schema.MapAttribute{
 				Description: "Key/value metadata for server tagging.",
@@ -288,9 +347,7 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"Updating this attribute requires a server re-install.",
 				Optional: true,
 				PlanModifiers: []planmodifier.Int64{
-					WarnIfChangedInt64("Server re-install required.",
-						"You are updating attributes that require a server re-install."+
-							" This will wipe all of your data and may take awhile."),
+					WarnIfChangedInt64(warnReinstallSummary, warnReinstallDetail),
 				},
 			},
 			"power_state": schema.StringAttribute{
@@ -350,6 +407,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 								stringplanmodifier.UseStateForUnknown(),
 							},
 						},
+						"vlan_id": schema.Int64Attribute{
+							Description: "VLAN ID of a private address.",
+							Computed:    true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
+						},
 					},
 				},
 			},
@@ -387,11 +451,15 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Description: "Pricing currency.",
 					},
 				},
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"allow_reinstall": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size` or `user_data`. " +
+				Description: "Allow server re-installation when updating " +
+					"`image`, `ssh_key_ids`, `os_partition_size`, `user_data`, `ipxe` or `persist_ipxe` attributes. " +
 					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update. " +
 					"Server private IP may change on re-install.",
 				Default: booldefault.StaticBool(false),
@@ -404,16 +472,96 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 	}
 }
 
-func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	var plan, state serverResourceModel
-
-	// We only care about updates for now, so return if state or plan are null.
-	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+func (r *serverResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	if req.Config.Raw.IsNull() {
 		return
 	}
 
+	var config serverResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	img := config.Image
+
+	// If image is set to iPXE, require an iPXE script.
+	if img.ValueString() == ipxeImage && config.IPXE.IsNull() {
+		resp.Diagnostics.AddAttributeError(path.Root("ipxe"),
+			"Missing Attribute Configuration",
+			fmt.Sprintf("ipxe must be configured when image is set to %q", ipxeImage))
+	}
+
+	// If image is NOT iPXE or null, prohibit iPXE script attribute.
+	// This prohibits unknown images, but that doesn't really matter
+	// since custom iPXE image is the only valid image value when iPXE is used.
+	if (img.ValueString() != ipxeImage && !img.IsNull()) && !config.IPXE.IsNull() {
+		if img.IsUnknown() {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("image"), "Invalid Attribute Configuration",
+				"image cannot be unknown when ipxe is configured. "+
+					fmt.Sprintf("Omit image or set it to %q", ipxeImage),
+			)
+		} else {
+			resp.Diagnostics.AddAttributeError(path.Root("image"),
+				"Invalid Attribute Configuration",
+				fmt.Sprintf("%q image is not compatible with ipxe. Omit image or set it to %q",
+					img.ValueString(), ipxeImage))
+		}
+	}
+}
+
+// defaultImage gets a default OS image for the given server plan.
+// Specifically, it tries to find the latest Ubuntu version,
+// with a fallback to a random image.
+func (r *serverResource) defaultImage(ctx context.Context, plan string) (string, error) {
+	images, _, err := r.client.Images.List(ctx, plan, nil)
+	if err != nil {
+		return "", err
+	}
+
+	var newImage string
+	for _, image := range images {
+		// Try to pick the latest ubuntu version.
+		if strings.HasPrefix(image.Slug, "ubuntu") && image.Slug > newImage {
+			newImage = image.Slug
+		}
+	}
+
+	// If for some reason we couldn't find an image, try to fall back to the first
+	// one in the slice.
+	if newImage == "" {
+		if len(images) == 0 {
+			return "", fmt.Errorf("no images found for plan %q", plan)
+		}
+		newImage = images[0].Slug
+	}
+
+	return newImage, nil
+}
+
+func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Skip on delete.
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan, state, config serverResourceModel
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If iPXE script is set, set iPXE image.
+	if !plan.IPXE.IsNull() {
+		plan.Image = types.StringValue(ipxeImage)
+	}
+
+	// If it's a creation request, we can return already.
+	if req.State.Raw.IsNull() {
+		resp.Plan.Set(ctx, plan)
 		return
 	}
 
@@ -422,44 +570,94 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
-	// Private IP may change when re-installing server.
-	if isReinstall(plan, state) {
-		ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
-		diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
-		resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if requiresReinstall(plan, state) {
+		// Power state can be unpredictable when re-installing.
+		plan.PowerState = types.StringUnknown()
+
+		resp.Diagnostics.Append(modifyPrivateIP(ctx, &plan)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		ipsAttrs := make([]attr.Value, 0, len(ips))
+		// Ensure we don't pass SSH keys, when reinstalling non-iPXE -> iPXE,
+		// since SSH keys use state, if unconfigured.
+		if !plan.IPXE.IsNull() && state.Image.ValueString() != ipxeImage {
+			plan.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{})
+		}
+	}
 
-		for i := range ips {
-			if ips[i].Type.ValueString() == "private-ip" {
-				ips[i].Address = types.StringUnknown()
-				ips[i].Id = types.StringUnknown()
-				ips[i].CIDR = types.StringUnknown()
-			}
+	// If we need to reinstall an iPXE server into a non-iPXE server, we may need
+	// to find a default image, if the user didn't configure one.
+	if requiresReinstall(plan, state) && plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
+		serverPlan := plan.Plan
 
-			ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
-			resp.Diagnostics.Append(ipDiags...)
+		if config.Image.IsNull() {
+			resp.Diagnostics.Append(r.modifyImage(ctx, serverPlan, &plan)...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
-
-			ipsAttrs = append(ipsAttrs, ipAttr)
 		}
-
-		ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
-		resp.Diagnostics.Append(ipsDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		plan.IpAddresses = ipsTf
 	}
 
 	diags := resp.Plan.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
+}
+
+func modifyPrivateIP(ctx context.Context, plan *serverResourceModel) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
+	diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
+	d.Append(diags...)
+	if d.HasError() {
+		return d
+	}
+
+	ipsAttrs := make([]attr.Value, 0, len(ips))
+
+	for i := range ips {
+		if ips[i].Type.ValueString() == "private-ip" {
+			ips[i].Address = types.StringUnknown()
+			ips[i].Id = types.StringUnknown()
+			ips[i].CIDR = types.StringUnknown()
+		}
+
+		ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
+		d.Append(ipDiags...)
+		if d.HasError() {
+			return d
+		}
+
+		ipsAttrs = append(ipsAttrs, ipAttr)
+	}
+
+	ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
+	d.Append(ipsDiags...)
+	if d.HasError() {
+		return d
+	}
+
+	plan.IpAddresses = ipsTf
+	return d
+}
+
+func (r *serverResource) modifyImage(ctx context.Context, serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	img, err := r.defaultImage(ctx, serverPlan.ValueString())
+	if err != nil {
+		d.AddError("No Default Plan Image",
+			fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
+		return d
+	}
+	plan.Image = types.StringValue(img)
+
+	return d
 }
 
 func (r *serverResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -482,14 +680,15 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	request := &cherrygo.CreateServer{
-		ProjectID:    int(data.ProjectId.ValueInt64()),
-		Plan:         data.Plan.ValueString(),
-		Region:       data.Region.ValueString(),
-		Image:        data.Image.ValueString(),
-		Hostname:     data.Hostname.ValueString(),
-		SpotInstance: data.SpotInstance.ValueBool(),
-		Cycle:        data.Cycle.ValueString(),
-		DiscountCode: data.DiscountCode.ValueString(),
+		ProjectID:     int(data.ProjectId.ValueInt64()),
+		Plan:          data.Plan.ValueString(),
+		Region:        data.Region.ValueString(),
+		Image:         data.Image.ValueString(),
+		Hostname:      data.Hostname.ValueString(),
+		SpotInstance:  data.SpotInstance.ValueBool(),
+		Cycle:         data.Cycle.ValueString(),
+		DiscountCode:  data.DiscountCode.ValueString(),
+		ConfigureIPv6: data.ConfigureIPv6.ValueBoolPointer(),
 	}
 
 	if !data.SSHKeyIds.IsNull() && !data.SSHKeyIds.IsUnknown() {
@@ -525,7 +724,7 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	if !data.UserData.IsNull() {
 		userData := data.UserData.ValueString()
-		if err := isBase64(userData); err == nil {
+		if err := validateBase64(userData); err == nil {
 			request.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
@@ -533,11 +732,27 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
+	if !data.IPXE.IsNull() {
+		ipxe := data.IPXE.ValueString()
+		if err := validateBase64(ipxe); err == nil {
+			request.IPXE = ipxe
+		} else {
+			resp.Diagnostics.AddError(
+				"failed to parse ipxe, check that it's valid base64", err.Error(),
+			)
+			return
+		}
+	}
+
+	if !data.PersistIPXE.IsNull() {
+		request.PersistIPXE = data.PersistIPXE.ValueBool()
+	}
+
 	if !data.OSPartitionSize.IsNull() {
 		request.OSPartitionSize = int(data.OSPartitionSize.ValueInt64())
 	}
 
-	server, _, err := r.client.Servers.Create(request)
+	server, _, err := r.client.Servers.Create(ctx, request)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to create a CherryServers server resource",
@@ -552,32 +767,17 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	err = backoff.Retry(
-		func() error {
-			stateOption := cherrygo.GetOptions{Fields: []string{"state"}}
-			s, _, e := r.client.Servers.Get(server.ID, &stateOption)
-			if e != nil {
-				return backoff.Permanent(e)
-			}
+	deployCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
-			if s.State == "pending" || s.State == "provisioning" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.State == "active" {
-				return nil
-			}
-
-			return backoff.Permanent(errors.New("failed to deploy server"))
-		}, backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(createTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+	ticker := time.NewTicker(5*time.Second + randDurationN(5*time.Second))
+	server, err = r.pollUntilActive(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to deploy CherryServers server", err.Error())
 		return
 	}
 
-	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	powerState, _, err := r.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
@@ -588,19 +788,19 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		Name: data.Name.ValueString(),
 	}
 
-	server, _, err = r.client.Servers.Update(server.ID, &updateRequest)
+	server, _, err = r.client.Servers.Update(ctx, server.ID, &updateRequest)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update a CherryServers server resource with name/bgp after it's creation", err.Error())
 		return
 	}
 
-	server, _, err = r.client.Servers.Get(server.ID, nil)
+	server, _, err = r.client.Servers.Get(ctx, server.ID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read a CherryServers server resource", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -629,7 +829,7 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("invalid server ID in state", err.Error())
 		return
 	}
-	server, serverGetResp, err := r.client.Servers.Get(serverID, nil)
+	server, serverGetResp, err := r.client.Servers.Get(ctx, serverID, nil)
 	if err != nil {
 		if is404Error(serverGetResp) {
 			resp.State.RemoveResource(ctx)
@@ -647,13 +847,13 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	powerState, _, err := r.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -666,7 +866,6 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state serverResourceModel
 
-	// Read Terraform plan and state data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -676,17 +875,17 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	serverID, _ := strconv.Atoi(plan.Id.ValueString())
 
-	if !plan.Image.Equal(state.Image) ||
-		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
-		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
-		!plan.UserData.Equal(state.UserData) {
+	if requiresReinstall(plan, state) {
 		if !plan.AllowReinstall.ValueBool() {
 			resp.Diagnostics.AddError("allow_reinstall attribute not set",
-				"updating image, ssh_key_ids, os_partition_size or user_data, requires setting allow_reinstall to true")
+				"updating image, ssh_key_ids, os_partition_size, user_data or ipxe requires setting allow_reinstall to true")
 			return
 		}
 
 		r.reinstall(ctx, plan, resp)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 	}
 
@@ -703,7 +902,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		requestUpdate.Tags = &tagsMap
 	}
 
-	server, _, err := r.client.Servers.Update(serverID, &requestUpdate)
+	server, _, err := r.client.Servers.Update(ctx, serverID, &requestUpdate)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers server resource",
@@ -712,7 +911,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	server, _, err = r.client.Servers.Get(serverID, nil)
+	server, _, err = r.client.Servers.Get(ctx, serverID, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to update a CherryServers server resource",
@@ -721,13 +920,13 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	powerState, _, err := r.client.Servers.PowerState(server.ID)
+	powerState, _, err := r.client.Servers.PowerState(ctx, server.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to get CherryServers server power-state", err.Error())
 		return
 	}
 
-	if err = normalizeServerImage(&server, r.client); err != nil {
+	if err = normalizeServerImage(ctx, &server, r.client); err != nil {
 		resp.Diagnostics.AddError("Unable to normalize CherryServers server image", err.Error())
 	}
 
@@ -741,7 +940,7 @@ func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel, resp *resource.UpdateResponse) {
-	password, err := generatePassword()
+	password, err := cherrygo.GeneratePassword()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to generate password", err.Error(),
@@ -755,6 +954,7 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		Hostname:        plan.Hostname.ValueString(),
 		Password:        password,
 		OSPartitionSize: int(plan.OSPartitionSize.ValueInt64()),
+		PersistIPXE:     plan.PersistIPXE.ValueBool(),
 	}
 
 	if !plan.SSHKeyIds.IsNull() && !plan.SSHKeyIds.IsUnknown() {
@@ -767,7 +967,7 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 
 	if !plan.UserData.IsNull() {
 		userData := plan.UserData.ValueString()
-		if err := isBase64(userData); err == nil {
+		if err := validateBase64(userData); err == nil {
 			requestReinstall.UserData = userData
 		} else {
 			resp.Diagnostics.AddError("unable to read user data", err.Error())
@@ -775,7 +975,19 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		}
 	}
 
-	server, _, err := r.client.Servers.Reinstall(serverID, requestReinstall)
+	if !plan.IPXE.IsNull() {
+		ipxe := plan.IPXE.ValueString()
+		if err := validateBase64(ipxe); err == nil {
+			requestReinstall.IPXE = ipxe
+		} else {
+			resp.Diagnostics.AddError(
+				"failed to parse ipxe, ensure it's valid base64", err.Error(),
+			)
+			return
+		}
+	}
+
+	server, _, err := r.client.Servers.Reinstall(ctx, serverID, requestReinstall)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"unable to create a CherryServers server resource",
@@ -790,26 +1002,11 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		return
 	}
 
-	err = backoff.Retry(
-		func() error {
-			statusOption := cherrygo.GetOptions{Fields: []string{"status"}}
-			s, _, e := r.client.Servers.Get(server.ID, &statusOption)
-			if e != nil {
-				return backoff.Permanent(e)
-			}
+	deployCtx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
-			if s.Status == "deploying" {
-				return errors.New("server is in inactive state")
-			}
-
-			if s.Status == "deployed" {
-				return nil
-			}
-
-			return backoff.Permanent(errors.New("server is in unknown status"))
-		}, backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(updateTimeout),
-			backoff.WithInitialInterval(time.Second*10)))
+	ticker := time.NewTicker(5*time.Second + randDurationN(5*time.Second))
+	_, err = r.pollUntilTerminal(deployCtx, server, ticker.C)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to reinstall CherryServers server", err.Error())
 		return
@@ -828,7 +1025,7 @@ func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	serverID, _ := strconv.Atoi(data.Id.ValueString())
 
-	if _, _, err := r.client.Servers.Delete(serverID); err != nil {
+	if _, err := r.client.Servers.Delete(ctx, serverID); err != nil {
 		resp.Diagnostics.AddError(
 			"unable to delete a CherryServers server resource",
 			err.Error(),
@@ -844,11 +1041,71 @@ func (r *serverResource) ImportState(ctx context.Context, req resource.ImportSta
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func isReinstall(plan, state serverResourceModel) bool {
+func isTerminal(s cherrygo.Server) bool {
+	return slices.Contains([]string{"deployed", "allocated", "failed deployment"}, s.Status)
+}
+
+func isFailed(s cherrygo.Server) bool {
+	return s.Status == "failed deployment"
+}
+
+// for server reinstallation.
+func (r *serverResource) pollUntilTerminal(
+	ctx context.Context,
+	server cherrygo.Server,
+	c <-chan time.Time,
+) (cherrygo.Server, error) {
+	for !isTerminal(server) {
+		select {
+		case <-c:
+			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
+			if err != nil {
+				return server, err
+			}
+			server = polled
+		case <-ctx.Done():
+			return server, ctx.Err()
+		}
+	}
+
+	if isFailed(server) {
+		return server, fmt.Errorf("server %d deployment failed", server.ID)
+	}
+	return server, nil
+}
+
+// for server creation.
+func (r *serverResource) pollUntilActive(
+	ctx context.Context,
+	server cherrygo.Server,
+	c <-chan time.Time,
+) (cherrygo.Server, error) {
+	for server.State != "active" && !isFailed(server) {
+		select {
+		case <-c:
+			polled, _, err := r.client.Servers.Get(ctx, server.ID, nil)
+			if err != nil {
+				return server, err
+			}
+			server = polled
+		case <-ctx.Done():
+			return server, ctx.Err()
+		}
+	}
+
+	if isFailed(server) {
+		return server, fmt.Errorf("server %d deployment failed", server.ID)
+	}
+	return server, nil
+}
+
+func requiresReinstall(plan, state serverResourceModel) bool {
 	if !plan.Image.Equal(state.Image) ||
 		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
 		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
-		!plan.UserData.Equal(state.UserData) {
+		!plan.UserData.Equal(state.UserData) ||
+		!plan.IPXE.Equal(state.IPXE) ||
+		!plan.PersistIPXE.Equal(state.PersistIPXE) {
 		return true
 	}
 	return false
