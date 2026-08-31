@@ -12,8 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"terraform-provider-cherryservers/internal/provider/datasourcebase"
-
+	"github.com/cherryservers/terraform-provider-cherryservers/internal/provider/datasourcebase"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
