@@ -117,6 +117,11 @@ func (d *serverResourceModel) populateModel(server cherrygo.Server, ctx context.
 			Address:       types.StringValue(ip.Address),
 			AddressFamily: types.Int64Value(int64(ip.AddressFamily)),
 			CIDR:          types.StringValue(ip.CIDR),
+			VLAN:          types.Int64Null(),
+		}
+
+		if ip.Type == "private-ip" {
+			ipModel.VLAN = types.Int64Value(int64(ip.VLANID))
 		}
 
 		ipTf, ipDiags := types.ObjectValueFrom(ctx, ipModel.AttributeTypes(), ipModel)
@@ -155,6 +160,7 @@ type ipAddressFlatResourceModel struct {
 	Address       types.String `tfsdk:"address"`
 	AddressFamily types.Int64  `tfsdk:"address_family"`
 	CIDR          types.String `tfsdk:"cidr"`
+	VLAN          types.Int64  `tfsdk:"vlan_id"`
 }
 
 func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
@@ -164,6 +170,7 @@ func (m ipAddressFlatResourceModel) AttributeTypes() map[string]attr.Type {
 		"address":        types.StringType,
 		"address_family": types.Int64Type,
 		"cidr":           types.StringType,
+		"vlan_id":        types.Int64Type,
 	}
 }
 
@@ -378,6 +385,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							Computed:    true,
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.UseStateForUnknown(),
+							},
+						},
+						"vlan_id": schema.Int64Attribute{
+							Description: "VLAN ID of a private address.",
+							Computed:    true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
 							},
 						},
 					},

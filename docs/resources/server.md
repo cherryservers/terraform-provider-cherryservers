@@ -99,6 +99,7 @@ Read-Only:
 - `cidr` (String) CIDR of the IP address.
 - `id` (String) ID of the IP address.
 - `type` (String) Type of the IP address.
+- `vlan_id` (Number) VLAN ID of a private address.
 
 
 <a id="nestedatt--pricing"></a>
