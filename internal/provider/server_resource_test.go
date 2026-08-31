@@ -2,14 +2,21 @@ package provider
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"testing"
 
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -112,6 +119,146 @@ func TestAccServerResource_fullConfig(t *testing.T) {
 	})
 }
 
+func TestAccServerIPXE(t *testing.T) {
+	// We need an API key for setup, so skip early if it's not an acceptance test.
+	if acc := os.Getenv(resource.EnvTfAcc); acc == "" {
+		t.Skip("skipping ipxe acceptance test, since TF_ACC is not set")
+	}
+
+	const resourceName = "cherryservers_server.ipxe_test"
+	project := testProjectNamePrefix + "ipxe"
+	plan, region := ipxePlanRegion(t, testCherryGoClient, testTeam)
+	ipxeCreate := ipxeScript(t, filepath.Join("testdata", "ubuntu.ipxe"))
+	ipxeReinstall := ipxeScript(t, filepath.Join("testdata", "alma.ipxe"))
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy: func(s *terraform.State) error {
+			return testAccCheckCherryServersServerDestroy(t.Context(), s)
+		},
+		Steps: []resource.TestStep{
+			{
+				// Fail when iPXE image is configured with no script.
+				Config:      ipxeOnlyImageConfig(project, region, plan, ipxeImage, testTeam, false),
+				ExpectError: regexp.MustCompile("Missing Attribute Configuration"),
+			},
+			{
+				// Fail when iPXE script is configured with user_data.
+				Config:      ipxeInvalidWithUserData,
+				ExpectError: regexp.MustCompile("Attribute .* cannot be specified"),
+			},
+			{
+				// Fail when iPXE script is configured with os_partition_size.
+				Config:      ipxeInvalidWithOSPartitionSize,
+				ExpectError: regexp.MustCompile("Attribute .* cannot be specified"),
+			},
+			{
+				// Fail when iPXE script is configured with ssh_key_ids.
+				Config:      ipxeInvalidWithSSHKeyIDs,
+				ExpectError: regexp.MustCompile("Attribute .* cannot be specified"),
+			},
+			{
+				// Succeed when valid iPXE script is provided and image is left
+				// for the provider to set.
+				Config: ipxeConfig(project, region, plan, ipxeCreate, testTeam, false),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectKnownValue(
+							resourceName,
+							tfjsonpath.New("image"),
+							knownvalue.StringExact(ipxeImage),
+						),
+					},
+				},
+				Check: resource.TestCheckResourceAttr(resourceName, "image", ipxeImage),
+			},
+			{
+				// Fail when updating iPXE script, but allow_reinstall is not enabled.
+				Config:      ipxeConfig(project, region, plan, ipxeReinstall, testTeam, false),
+				ExpectError: regexp.MustCompile("allow_reinstall attribute not set"),
+			},
+			{
+				// Succeed when reinstalling with a new iPXE script.
+				Config: ipxeConfig(project, region, plan, ipxeReinstall, testTeam, true),
+			},
+			{
+				// Fail when a standard image is configured along with an iPXE script.
+				Config:      ipxeWithImageConfig(project, region, plan, defaultTestImage, ipxeReinstall, testTeam, true),
+				ExpectError: regexp.MustCompile("Invalid Attribute Configuration"),
+			},
+			{
+				// Succeed when reinstalling an iPXE server into one with a standard image.
+				Config: ipxeOnlyImageConfig(project, region, plan, defaultTestImage, testTeam, true),
+			},
+			{
+				// Succeed when reinstalling a server with a standard image into one with iPXE
+				// and the image is configured by the user.
+				Config: ipxeWithImageConfig(project, region, plan, ipxeImage, ipxeCreate, testTeam, true),
+			},
+			{
+				// Imported server gets a new OS image planned on reinstall, when
+				// current image is iPXE, but no script is configured.
+				Config: ipxeOSPartitionConfig(project, region, plan, testTeam, true),
+
+				ResourceName:    resourceName,
+				ImportState:     true,
+				ImportStateKind: resource.ImportBlockWithID,
+
+				ImportPlanChecks: resource.ImportPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectKnownValue(
+							resourceName,
+							tfjsonpath.New("image"),
+							knownvalue.StringRegexp(regexp.MustCompile("ubuntu")),
+						),
+					},
+				},
+
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func ipxePlanRegion(t *testing.T, client *cherrygo.Client, team int) (plan, region string) {
+	t.Helper()
+
+	plans, _, err := client.Plans.List(t.Context(), team, nil)
+	if err != nil {
+		t.Fatalf("failed to list plans: %s)", err.Error())
+	}
+
+	stock := 0
+	for _, p := range plans {
+		for _, r := range p.AvailableRegions {
+			if r.StockQty > stock && slices.ContainsFunc(
+				p.Softwares, func(s cherrygo.SoftwareImage) bool {
+					return s.Image.Slug == ipxeImage
+				},
+			) {
+				stock = r.StockQty
+				plan = p.Slug
+				region = r.Slug
+			}
+		}
+	}
+
+	if plan == "" || region == "" {
+		t.Fatalf("failed to find ipxe plan with any stock %d", stock)
+	}
+	return
+}
+
+func ipxeScript(t *testing.T, path string) string {
+	t.Helper()
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read ipxe script file: %s", err.Error())
+	}
+
+	return base64.StdEncoding.EncodeToString(b)
+}
+
 func testAccCheckCherryServersServerExists(ctx context.Context, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -151,7 +298,6 @@ func testAccCheckCherryServersServerDestroy(ctx context.Context, s *terraform.St
 		}
 
 		server, resp, err := client.Servers.Get(ctx, serverID, nil)
-
 		if err != nil {
 			if is404Error(resp) {
 				continue
@@ -277,3 +423,108 @@ resource "cherryservers_server" "test_server_server" {
 }
 `, projectName, teamID, sshKeyLabel, sshKeyPublicKey)
 }
+
+func ipxeConfig(projectName, region, plan, ipxe string, team int, allowReinstall bool) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%d"
+}
+
+resource "cherryservers_server" "ipxe_test" {
+  region = "%s" 
+  plan = "%s"
+  project_id = "${cherryservers_project.test_server_project.id}"
+  ipxe = "%s"
+  allow_reinstall = %t
+}
+`, projectName, team, region, plan, ipxe, allowReinstall)
+}
+
+func ipxeOnlyImageConfig(projectName, region, plan, image string, team int, allowReinstall bool) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%d"
+}
+
+resource "cherryservers_ssh_key" "test_server_ssh_key" {
+  name = "test-key"
+  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMSagPMjsdBnJ1CsF+ChdfnqZK3wc1n8m6MSRy7CK2Dz key-1787825911386"
+}
+
+resource "cherryservers_server" "ipxe_test" {
+  region = "%s" 
+  plan = "%s"
+  project_id = "${cherryservers_project.test_server_project.id}"
+  image = "%s"
+  ssh_key_ids = ["${cherryservers_ssh_key.test_server_ssh_key.id}"]
+  allow_reinstall = %t
+}
+`, projectName, team, region, plan, image, allowReinstall)
+}
+
+func ipxeWithImageConfig(projectName, region, plan, image, ipxe string, team int, allowReinstall bool) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%d"
+}
+
+resource "cherryservers_server" "ipxe_test" {
+  region = "%s"
+  plan = "%s"
+  project_id = "${cherryservers_project.test_server_project.id}"
+  ipxe = "%s"
+  image = "%s"
+  allow_reinstall = %t
+}
+`, projectName, team, region, plan, ipxe, image, allowReinstall)
+}
+
+func ipxeOSPartitionConfig(projectName, region, plan string, team int, allowReinstall bool) string {
+	return fmt.Sprintf(`
+resource "cherryservers_project" "test_server_project" {
+  name = "%s"
+  team_id = "%d"
+}
+
+resource "cherryservers_server" "ipxe_test" {
+  region = "%s" 
+  plan = "%s"
+  os_partition_size = 100
+  project_id = "${cherryservers_project.test_server_project.id}"
+  allow_reinstall = %t
+}
+`, projectName, team, region, plan, allowReinstall)
+}
+
+const (
+	ipxeInvalidWithUserData = `
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  user_data = "test"
+  project_id = 1
+  ipxe = "test"
+}
+`
+	ipxeInvalidWithOSPartitionSize = `
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  os_partition_size = 1
+  project_id = 1
+  ipxe = "test"
+}
+`
+	ipxeInvalidWithSSHKeyIDs = `
+resource "cherryservers_server" "ipxe_test" {
+  region = "test"
+  plan = "test"
+  ssh_key_ids = [ "1" ]
+  project_id = 1
+  ipxe = "test"
+}
+`
+)

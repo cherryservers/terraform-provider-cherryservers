@@ -2,7 +2,10 @@ package provider
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/cherryservers/cherrygo/v4"
@@ -15,7 +18,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var testCherryGoClient *cherrygo.Client
+const (
+	testProjectNamePrefix = "terraform_test_project_"
+	defaultTestImage      = "ubuntu_26_04_64bit"
+)
+
+var (
+	testCherryGoClient *cherrygo.Client
+	testTeam           int
+)
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform
@@ -29,18 +40,56 @@ func testAccPreCheck(t *testing.T) {
 	// You can add code here to run prior to any test case execution, for example assertions
 	// about the appropriate environment variables being set are common to see in a pre-check
 	// function.
+}
 
-	client, err := sharedClient()
-	if err != nil {
-		t.Fatal(err)
-	}
+func setTestTeam() error {
+	const teamIDVar = "CHERRY_TEST_TEAM_ID"
 
-	var ok bool
-	testCherryGoClient, ok = client.(*cherrygo.Client)
+	team, ok := os.LookupEnv(teamIDVar)
 	if !ok {
-		errStr := fmt.Sprintf("expected cherrygo.Client, got %T", client)
-		t.Fatal(errStr)
+		return fmt.Errorf("%s must be set for acceptance tests", teamIDVar)
 	}
+	id, err := strconv.Atoi(team)
+	if err != nil {
+		return fmt.Errorf("%s must be an integer: %s", teamIDVar, err.Error())
+	}
+
+	testTeam = id
+	return nil
+}
+
+func setupClient() (*cherrygo.Client, error) {
+	apiKey := os.Getenv(apiKeyVar)
+	if apiKey == "" {
+		return nil, fmt.Errorf("%s must be set for acceptance tests", apiKeyVar)
+	}
+
+	userAgent := "terraform-provider/cherryservers/test terraform/dev"
+	args := []cherrygo.ClientOpt{cherrygo.WithAPIKey(apiKey), cherrygo.WithUserAgent(userAgent)}
+	client, err := cherrygo.NewClient(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+func TestMain(m *testing.M) {
+	// Skip setup on unit tests.
+	if acc := os.Getenv(resource.EnvTfAcc); acc != "" {
+		var err error
+		testCherryGoClient, err = setupClient()
+		if err != nil {
+			log.Fatalf("failed to initialize api client: %s", err.Error())
+		}
+
+		err = setTestTeam()
+		if err != nil {
+			log.Fatalf("failed to get test team: %s", err.Error())
+		}
+
+	}
+	resource.TestMain(m)
 }
 
 func TestAPITokenConflictsWithAPIKey(t *testing.T) {

@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"strings"
+	"time"
 
 	"github.com/cherryservers/cherrygo/v4"
 )
@@ -35,7 +37,7 @@ func serverList(ctx context.Context, projectID int, ServerService cherrygo.Serve
 	return srvList, err
 }
 
-func isBase64(s string) error {
+func validateBase64(s string) error {
 	_, err := base64.StdEncoding.DecodeString(s)
 	return err
 }
@@ -56,4 +58,9 @@ func normalizeServerImage(ctx context.Context, server *cherrygo.Server, client *
 	}
 
 	return errors.New("could not find image slug for image with name `" + server.Image + "`")
+}
+
+// randDurationN returns a random duration [0,n).
+func randDurationN(n time.Duration) time.Duration {
+	return time.Duration(rand.Int64N(int64(n)))
 }
