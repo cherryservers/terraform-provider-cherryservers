@@ -62,6 +62,7 @@ type serverResourceModel struct {
 	Image               types.String   `tfsdk:"image"`
 	SSHKeyIds           types.Set      `tfsdk:"ssh_key_ids"`
 	ExtraIPAddressesIds types.Set      `tfsdk:"extra_ip_addresses_ids"`
+	ConfigureIPv6       types.Bool     `tfsdk:"configure_ipv6"`
 	IPAddressesIds      types.Set      `tfsdk:"ip_addresses_ids"`
 	UserData            types.String   `tfsdk:"user_data"`
 	IPXE                types.String   `tfsdk:"ipxe"`
@@ -294,6 +295,13 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					setvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("ip_addresses_ids"),
 					}...),
+				},
+			},
+			"configure_ipv6": schema.BoolAttribute{
+				Description: "Enable IPv6 when supported; ignored otherwise. See https://www.cherryservers.com/knowledge/docs/networking/ip-addressing/ipv6.",
+				Optional:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
 				},
 			},
 			"ip_addresses_ids": schema.SetAttribute{
@@ -672,14 +680,15 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	request := &cherrygo.CreateServer{
-		ProjectID:    int(data.ProjectId.ValueInt64()),
-		Plan:         data.Plan.ValueString(),
-		Region:       data.Region.ValueString(),
-		Image:        data.Image.ValueString(),
-		Hostname:     data.Hostname.ValueString(),
-		SpotInstance: data.SpotInstance.ValueBool(),
-		Cycle:        data.Cycle.ValueString(),
-		DiscountCode: data.DiscountCode.ValueString(),
+		ProjectID:     int(data.ProjectId.ValueInt64()),
+		Plan:          data.Plan.ValueString(),
+		Region:        data.Region.ValueString(),
+		Image:         data.Image.ValueString(),
+		Hostname:      data.Hostname.ValueString(),
+		SpotInstance:  data.SpotInstance.ValueBool(),
+		Cycle:         data.Cycle.ValueString(),
+		DiscountCode:  data.DiscountCode.ValueString(),
+		ConfigureIPv6: data.ConfigureIPv6.ValueBoolPointer(),
 	}
 
 	if !data.SSHKeyIds.IsNull() && !data.SSHKeyIds.IsUnknown() {

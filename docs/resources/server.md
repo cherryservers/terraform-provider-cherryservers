@@ -57,6 +57,7 @@ resource "cherryservers_server" "server" {
 ### Optional
 
 - `allow_reinstall` (Boolean) Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size`, `user_data`, `ipxe` or `persist_ipxe` attributes. WARNING: The reinstall will be triggered even if Terraform reports an in-place update. Server private IP may change on re-install.
+- `configure_ipv6` (Boolean) Enable IPv6 when supported; ignored otherwise. See https://www.cherryservers.com/knowledge/docs/networking/ip-addressing/ipv6.
 - `cycle` (String) Server billing cycle slug. Default is 'hourly.
 - `discount_code` (String) Server discount code.
 - `extra_ip_addresses_ids` (Set of String) Set of the IP address IDs to be embedded into the server.
