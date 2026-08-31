@@ -10,6 +10,7 @@ import (
 
 	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -64,6 +65,7 @@ type serverResourceModel struct {
 	IPAddressesIds      types.Set      `tfsdk:"ip_addresses_ids"`
 	UserData            types.String   `tfsdk:"user_data"`
 	IPXE                types.String   `tfsdk:"ipxe"`
+	PersistIPXE         types.Bool     `tfsdk:"persist_ipxe"`
 	Tags                types.Map      `tfsdk:"tags"`
 	SpotInstance        types.Bool     `tfsdk:"spot_instance"`
 	OSPartitionSize     types.Int64    `tfsdk:"os_partition_size"`
@@ -245,6 +247,16 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					}...),
 				},
 				Sensitive: true,
+			},
+			"persist_ipxe": schema.BoolAttribute{
+				Description: "Enable persisting the universal iPXE image between server boots. See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers.",
+				Optional:    true,
+				Validators: []validator.Bool{
+					boolvalidator.AlsoRequires(path.MatchRoot("ipxe")),
+				},
+				PlanModifiers: []planmodifier.Bool{
+					WarnIfChangedBool(warnReinstallSummary, warnReinstallDetail),
+				},
 			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the server operating system. " +
@@ -438,7 +450,8 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"allow_reinstall": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Allow server re-installation when updating `image`, `ssh_key_ids`, `os_partition_size`, `user_data` or `ipxe`. " +
+				Description: "Allow server re-installation when updating " +
+					"`image`, `ssh_key_ids`, `os_partition_size`, `user_data`, `ipxe` or `persist_ipxe` attributes. " +
 					"WARNING: The reinstall will be triggered even if Terraform reports an in-place update. " +
 					"Server private IP may change on re-install.",
 				Default: booldefault.StaticBool(false),
@@ -722,6 +735,10 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
+	if !data.PersistIPXE.IsNull() {
+		request.PersistIPXE = data.PersistIPXE.ValueBool()
+	}
+
 	if !data.OSPartitionSize.IsNull() {
 		request.OSPartitionSize = int(data.OSPartitionSize.ValueInt64())
 	}
@@ -928,6 +945,7 @@ func (r *serverResource) reinstall(ctx context.Context, plan serverResourceModel
 		Hostname:        plan.Hostname.ValueString(),
 		Password:        password,
 		OSPartitionSize: int(plan.OSPartitionSize.ValueInt64()),
+		PersistIPXE:     plan.PersistIPXE.ValueBool(),
 	}
 
 	if !plan.SSHKeyIds.IsNull() && !plan.SSHKeyIds.IsUnknown() {
@@ -1077,7 +1095,8 @@ func requiresReinstall(plan, state serverResourceModel) bool {
 		!plan.OSPartitionSize.Equal(state.OSPartitionSize) ||
 		!plan.SSHKeyIds.Equal(state.SSHKeyIds) ||
 		!plan.UserData.Equal(state.UserData) ||
-		!plan.IPXE.Equal(state.IPXE) {
+		!plan.IPXE.Equal(state.IPXE) ||
+		!plan.PersistIPXE.Equal(state.PersistIPXE) {
 		return true
 	}
 	return false
