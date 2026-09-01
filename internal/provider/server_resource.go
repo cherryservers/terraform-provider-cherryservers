@@ -576,6 +576,10 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	if requiresReinstall(plan, state) {
+		if !plan.AllowReinstall.ValueBool() {
+			appendReinstallNotAllowedErrors(&resp.Diagnostics, plan, state)
+			return
+		}
 		resp.Diagnostics.Append(r.modifyReinstall(ctx, &plan, state, config)...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -1122,4 +1126,33 @@ func requiresReinstall(plan, state serverResourceModel) bool {
 		return true
 	}
 	return false
+}
+
+func appendReinstallNotAllowedErrors(d *diag.Diagnostics, plan, state serverResourceModel) {
+	var errs diag.Diagnostics
+
+	const (
+		summary = "Re-installation not allowed."
+		detail  = "Updating `%s` requires `allow_reinstall` to be enabled."
+	)
+	if !plan.Image.Equal(state.Image) {
+		d.AddAttributeError(path.Root("image"), summary, fmt.Sprintf(detail, "image"))
+	}
+	if !plan.OSPartitionSize.Equal(state.OSPartitionSize) {
+		d.AddAttributeError(path.Root("os_partition_size"), summary, fmt.Sprintf(detail, "os_partition_size"))
+	}
+	if !plan.SSHKeyIds.Equal(state.SSHKeyIds) {
+		d.AddAttributeError(path.Root("ssh_key_ids"), summary, fmt.Sprintf(detail, "ssh_key_ids"))
+	}
+	if !plan.UserData.Equal(state.UserData) {
+		d.AddAttributeError(path.Root("user_data"), summary, fmt.Sprintf(detail, "user_data"))
+	}
+	if !plan.IPXE.Equal(state.IPXE) {
+		d.AddAttributeError(path.Root("ipxe"), summary, fmt.Sprintf(detail, "ipxe"))
+	}
+	if !plan.PersistIPXE.Equal(state.PersistIPXE) {
+		d.AddAttributeError(path.Root("persist_ipxe"), summary, fmt.Sprintf(detail, "persist_ipxe"))
+	}
+
+	d.Append(errs...)
 }
