@@ -182,13 +182,7 @@ func (r *serverResource) Metadata(ctx context.Context, req resource.MetadataRequ
 }
 
 func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	const (
-		warnReinstallSummary = "Server re-install required."
-		warnReinstallDetail  = "You are updating attributes that require a server re-install." +
-			" This will wipe all of your data and may take awhile." +
-			" Requires `allow_reinstall to be set to `true`."
-	)
-
+	const requiresReinstall = "Updating this attribute requires a server re-install."
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
 		Description: "Provides a Cherry Servers server resource. This can be used to create, read, modify, and delete servers on your Cherry Servers account.",
@@ -233,13 +227,10 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"ipxe": schema.StringAttribute{
 				Description: "Base64-encoded iPXE template blob. The decoded content must start with `#!ipxe`. " +
-					"Updating this attribute requires a server re-install. " +
-					"Note that not all server plans support iPXE, use the plan/plans data sources " +
+					requiresReinstall +
+					" Note that not all server plans support iPXE, use the plan/plans data sources " +
 					"to check supported OS images.",
 				Optional: true,
-				PlanModifiers: []planmodifier.String{
-					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
-				},
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("ssh_key_ids"),
@@ -250,38 +241,32 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Sensitive: true,
 			},
 			"persist_ipxe": schema.BoolAttribute{
-				Description: "Enable persisting the universal iPXE image between server boots. See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers.",
-				Optional:    true,
+				Description: "Enable persisting the universal iPXE image between server boots. See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers. " +
+					requiresReinstall,
+				Optional: true,
 				Validators: []validator.Bool{
 					boolvalidator.AlsoRequires(path.MatchRoot("ipxe")),
-				},
-				PlanModifiers: []planmodifier.Bool{
-					WarnIfChangedBool(warnReinstallSummary, warnReinstallDetail),
 				},
 			},
 			"image": schema.StringAttribute{
 				Description: "Slug of the server operating system. " +
-					"Updating this attribute requires a server re-install. " +
 					"If iPXE is used, this must be set to `" + ipxeImage +
 					"` or left unconfigured, in which case the provider will set the " +
-					"correct image. " +
-					"Updating this attribute requires a server re-install.",
+					"correct image. " + requiresReinstall,
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
 				},
 			},
 			"ssh_key_ids": schema.SetAttribute{
 				Description: "Set of the SSH key IDs allowed to SSH to the server. " +
-					"Updating this attribute requires a server re-install.",
+					requiresReinstall,
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
-					WarnIfChangedSet(warnReinstallSummary, warnReinstallDetail),
 				},
 			},
 			"extra_ip_addresses_ids": schema.SetAttribute{
@@ -315,11 +300,8 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"user_data": schema.StringAttribute{
 				Description: "Base64 encoded user-data blob. It should be a bash or cloud-config script. " +
-					"Updating this attribute requires a server re-install.",
-				Optional: true,
-				PlanModifiers: []planmodifier.String{
-					WarnIfChangedString(warnReinstallSummary, warnReinstallDetail),
-				},
+					requiresReinstall,
+				Optional:  true,
 				Sensitive: true,
 			},
 			"tags": schema.MapAttribute{
@@ -343,12 +325,8 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"os_partition_size": schema.Int64Attribute{
-				Description: "OS partition size in GB. " +
-					"Updating this attribute requires a server re-install.",
-				Optional: true,
-				PlanModifiers: []planmodifier.Int64{
-					WarnIfChangedInt64(warnReinstallSummary, warnReinstallDetail),
-				},
+				Description: "OS partition size in GB. " + requiresReinstall,
+				Optional:    true,
 			},
 			"power_state": schema.StringAttribute{
 				Description: "The power state of the server, such as 'Powered off' or 'Powered on'.",
