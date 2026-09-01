@@ -576,36 +576,49 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	if requiresReinstall(plan, state) {
-		// Power state can be unpredictable when re-installing.
-		plan.PowerState = types.StringUnknown()
-
-		resp.Diagnostics.Append(modifyPrivateIP(ctx, &plan)...)
+		resp.Diagnostics.Append(r.modifyReinstall(ctx, &plan, state, config)...)
 		if resp.Diagnostics.HasError() {
 			return
-		}
-
-		// Ensure we don't pass SSH keys, when reinstalling non-iPXE -> iPXE,
-		// since SSH keys use state, if unconfigured.
-		if !plan.IPXE.IsNull() && state.Image.ValueString() != ipxeImage {
-			plan.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{})
-		}
-	}
-
-	// If we need to reinstall an iPXE server into a non-iPXE server, we may need
-	// to find a default image, if the user didn't configure one.
-	if requiresReinstall(plan, state) && plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
-		serverPlan := plan.Plan
-
-		if config.Image.IsNull() {
-			resp.Diagnostics.Append(r.modifyImage(ctx, serverPlan, &plan)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
 		}
 	}
 
 	diags := resp.Plan.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
+}
+
+func (r *serverResource) modifyReinstall(
+	ctx context.Context,
+	plan *serverResourceModel,
+	state, config serverResourceModel,
+) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	// Power state can be unpredictable when re-installing.
+	plan.PowerState = types.StringUnknown()
+
+	// Private IP may change on reinstall.
+	d.Append(modifyPrivateIP(ctx, plan)...)
+	if d.HasError() {
+		return d
+	}
+
+	// Ensure we don't pass SSH keys, when reinstalling non-iPXE -> iPXE,
+	// since SSH keys use state, if unconfigured.
+	if !plan.IPXE.IsNull() && state.Image.ValueString() != ipxeImage {
+		plan.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{})
+	}
+
+	// If we need to reinstall iPXE -> non-iPXE, we may need
+	// to find a default image, if the user didn't configure one.
+	if plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
+		serverPlan := plan.Plan
+
+		if config.Image.IsNull() {
+			d.Append(r.modifyImage(ctx, serverPlan, plan)...)
+		}
+	}
+
+	return d
 }
 
 func modifyPrivateIP(ctx context.Context, plan *serverResourceModel) diag.Diagnostics {
