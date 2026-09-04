@@ -14,14 +14,14 @@ Provides a Cherry Servers server resource. This can be used to create, read, mod
 
 ```terraform
 #Create a new server:
-resource "cherryservers_server" "server" {
+resource "cherryservers_server" "server-1" {
   plan       = "B1-1-1gb-20s-shared"
   project_id = 123456
   region     = "LT-Siauliai"
 }
 
 #Create a new server with options:
-resource "cherryservers_server" "server" {
+resource "cherryservers_server" "server-2" {
   plan                   = "B1-1-1gb-20s-shared"
   hostname               = "sharing-wallaby"
   project_id             = 123456

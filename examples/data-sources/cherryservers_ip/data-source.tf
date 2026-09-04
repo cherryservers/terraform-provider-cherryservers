@@ -5,6 +5,6 @@ data "cherryservers_ip" "my_ip" {
 
 # Get IP address info by address and project ID.
 data "cherryservers_ip" "by_address" {
-  ip_address = "0.0.0.0"
+  address    = "0.0.0.0"
   project_id = "123456"
 }

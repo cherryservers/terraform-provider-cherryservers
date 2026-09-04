@@ -5,7 +5,7 @@ resource "cherryservers_ip" "floating-1" {
 }
 
 # Create a new floating IP address with optional parameters
-resource "cherryservers_ip" "floating-1" {
+resource "cherryservers_ip" "floating-2" {
   project_id      = 123
   region          = "LT-Siauliai"
   target_hostname = "gentle-turtle"
