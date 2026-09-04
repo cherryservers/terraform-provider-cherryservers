@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/cherryservers/cherrygo/v4"
@@ -490,35 +489,6 @@ func (r *serverResource) ValidateConfig(ctx context.Context, req resource.Valida
 	}
 }
 
-// defaultImage gets a default OS image for the given server plan.
-// Specifically, it tries to find the latest Ubuntu version,
-// with a fallback to a random image.
-func (r *serverResource) defaultImage(ctx context.Context, plan string) (string, error) {
-	images, _, err := r.client.Images.List(ctx, plan, nil)
-	if err != nil {
-		return "", err
-	}
-
-	var newImage string
-	for _, image := range images {
-		// Try to pick the latest ubuntu version.
-		if strings.HasPrefix(image.Slug, "ubuntu") && image.Slug > newImage {
-			newImage = image.Slug
-		}
-	}
-
-	// If for some reason we couldn't find an image, try to fall back to the first
-	// one in the slice.
-	if newImage == "" {
-		if len(images) == 0 {
-			return "", fmt.Errorf("no images found for plan %q", plan)
-		}
-		newImage = images[0].Slug
-	}
-
-	return newImage, nil
-}
-
 func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	// Skip on delete.
 	if req.Plan.Raw.IsNull() {
@@ -554,11 +524,13 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	if requiresReinstall(plan, state) {
-		if !plan.AllowReinstall.ValueBool() {
-			appendReinstallNotAllowedErrors(&resp.Diagnostics, plan, state)
-			return
+		modifier := serverReinstallModifier{
+			plan:   &plan,
+			state:  state,
+			config: config,
+			lister: r.client.Images,
 		}
-		resp.Diagnostics.Append(r.modifyReinstall(ctx, &plan, state, config)...)
+		resp.Diagnostics.Append(modifier.modify(ctx)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -566,93 +538,6 @@ func (r *serverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 
 	diags := resp.Plan.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
-}
-
-func (r *serverResource) modifyReinstall(
-	ctx context.Context,
-	plan *serverResourceModel,
-	state, config serverResourceModel,
-) diag.Diagnostics {
-	var d diag.Diagnostics
-
-	// Power state can be unpredictable when re-installing.
-	plan.PowerState = types.StringUnknown()
-
-	// Private IP may change on reinstall.
-	d.Append(modifyPrivateIP(ctx, plan)...)
-	if d.HasError() {
-		return d
-	}
-
-	// Ensure we don't pass SSH keys, when reinstalling non-iPXE -> iPXE,
-	// since SSH keys use state, if unconfigured.
-	if !plan.IPXE.IsNull() && state.Image.ValueString() != ipxeImage {
-		plan.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{})
-	}
-
-	// If we need to reinstall iPXE -> non-iPXE, we may need
-	// to find a default image, if the user didn't configure one.
-	if plan.IPXE.IsNull() && state.Image.ValueString() == ipxeImage {
-		serverPlan := plan.Plan
-
-		if config.Image.IsNull() {
-			d.Append(r.modifyImage(ctx, serverPlan, plan)...)
-		}
-	}
-
-	return d
-}
-
-func modifyPrivateIP(ctx context.Context, plan *serverResourceModel) diag.Diagnostics {
-	var d diag.Diagnostics
-
-	ips := make([]ipAddressFlatResourceModel, 0, len(plan.IpAddresses.Elements()))
-	diags := plan.IpAddresses.ElementsAs(ctx, &ips, false)
-	d.Append(diags...)
-	if d.HasError() {
-		return d
-	}
-
-	ipsAttrs := make([]attr.Value, 0, len(ips))
-
-	for i := range ips {
-		if ips[i].Type.ValueString() == "private-ip" {
-			ips[i].Address = types.StringUnknown()
-			ips[i].Id = types.StringUnknown()
-			ips[i].CIDR = types.StringUnknown()
-		}
-
-		ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
-		d.Append(ipDiags...)
-		if d.HasError() {
-			return d
-		}
-
-		ipsAttrs = append(ipsAttrs, ipAttr)
-	}
-
-	ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
-	d.Append(ipsDiags...)
-	if d.HasError() {
-		return d
-	}
-
-	plan.IpAddresses = ipsTf
-	return d
-}
-
-func (r *serverResource) modifyImage(ctx context.Context, serverPlan types.String, plan *serverResourceModel) diag.Diagnostics {
-	var d diag.Diagnostics
-
-	img, err := r.defaultImage(ctx, serverPlan.ValueString())
-	if err != nil {
-		d.AddError("No Default Plan Image",
-			fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
-		return d
-	}
-	plan.Image = types.StringValue(img)
-
-	return d
 }
 
 func (r *serverResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -1098,33 +983,4 @@ func requiresReinstall(plan, state serverResourceModel) bool {
 		return true
 	}
 	return false
-}
-
-func appendReinstallNotAllowedErrors(d *diag.Diagnostics, plan, state serverResourceModel) {
-	var errs diag.Diagnostics
-
-	const (
-		summary = "Re-installation not allowed."
-		detail  = "Updating `%s` requires `allow_reinstall` to be enabled."
-	)
-	if !plan.Image.Equal(state.Image) {
-		d.AddAttributeError(path.Root("image"), summary, fmt.Sprintf(detail, "image"))
-	}
-	if !plan.OSPartitionSize.Equal(state.OSPartitionSize) {
-		d.AddAttributeError(path.Root("os_partition_size"), summary, fmt.Sprintf(detail, "os_partition_size"))
-	}
-	if !plan.SSHKeyIds.Equal(state.SSHKeyIds) {
-		d.AddAttributeError(path.Root("ssh_key_ids"), summary, fmt.Sprintf(detail, "ssh_key_ids"))
-	}
-	if !plan.UserData.Equal(state.UserData) {
-		d.AddAttributeError(path.Root("user_data"), summary, fmt.Sprintf(detail, "user_data"))
-	}
-	if !plan.IPXE.Equal(state.IPXE) {
-		d.AddAttributeError(path.Root("ipxe"), summary, fmt.Sprintf(detail, "ipxe"))
-	}
-	if !plan.PersistIPXE.Equal(state.PersistIPXE) {
-		d.AddAttributeError(path.Root("persist_ipxe"), summary, fmt.Sprintf(detail, "persist_ipxe"))
-	}
-
-	d.Append(errs...)
 }

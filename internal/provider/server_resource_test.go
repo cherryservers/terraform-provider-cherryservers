@@ -202,12 +202,12 @@ func TestAccServerIPXE(t *testing.T) {
 			{
 				// Fail when updating iPXE script, but allow_reinstall is not enabled.
 				Config:      ipxeConfig(project, region, plan, ipxeReinstall, testTeam, false, false),
-				ExpectError: regexp.MustCompile("allow_reinstall attribute not set"),
+				ExpectError: regexp.MustCompile("Re-installation not allowed"),
 			},
 			{
 				// Fail when updating persist_ipxe, but allow_reinstall is not enabled.
 				Config:      ipxeConfig(project, region, plan, ipxeReinstall, testTeam, false, true),
-				ExpectError: regexp.MustCompile("allow_reinstall attribute not set"),
+				ExpectError: regexp.MustCompile("Re-installation not allowed"),
 			},
 			{
 				// Succeed when reinstalling with a new iPXE script and persist_ipxe.

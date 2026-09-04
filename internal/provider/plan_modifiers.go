@@ -2,10 +2,15 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var _ planmodifier.String = useStateIfNoConfigurationChangesModifier{}
@@ -195,4 +200,160 @@ func (d warnIfChangedModifier) PlanModifyBool(ctx context.Context, req planmodif
 	}
 
 	resp.Diagnostics.AddAttributeWarning(req.Path, d.warningSummary, d.warningDetail)
+}
+
+type imgLister interface {
+	List(ctx context.Context, serverPlan string, opts *cherrygo.GetOptions) ([]cherrygo.Image, *cherrygo.Response, error)
+}
+
+type serverReinstallModifier struct {
+	plan          *serverResourceModel
+	state, config serverResourceModel
+	lister        imgLister
+}
+
+// modify modifies the plan for server re-installation.
+// Returns attribute errors if `allow_reinstall` is not enabled.
+func (m *serverReinstallModifier) modify(ctx context.Context) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	if !m.plan.AllowReinstall.ValueBool() {
+		m.appendNotAllowedErrors(&d)
+		return d
+	}
+
+	// Power state can be unpredictable when re-installing.
+	m.plan.PowerState = types.StringUnknown()
+
+	// Private IP may change on reinstall.
+	d.Append(m.modifyPrivateIP(ctx)...)
+	if d.HasError() {
+		return d
+	}
+
+	// Ensure we don't pass SSH keys, when reinstalling non-iPXE -> iPXE,
+	// since SSH keys use state, if unconfigured.
+	if !m.plan.IPXE.IsNull() && m.state.Image.ValueString() != ipxeImage {
+		m.plan.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{})
+	}
+
+	// If we need to reinstall iPXE -> non-iPXE, we may need
+	// to find a default image, if the user didn't configure one.
+	if m.plan.IPXE.IsNull() && m.state.Image.ValueString() == ipxeImage {
+		if m.config.Image.IsNull() {
+			d.Append(m.modifyImage(ctx)...)
+		}
+	}
+
+	return d
+}
+
+func (m *serverReinstallModifier) modifyPrivateIP(ctx context.Context) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	ips := make([]ipAddressFlatResourceModel, 0, len(m.plan.IpAddresses.Elements()))
+	diags := m.plan.IpAddresses.ElementsAs(ctx, &ips, false)
+	d.Append(diags...)
+	if d.HasError() {
+		return d
+	}
+
+	ipsAttrs := make([]attr.Value, 0, len(ips))
+
+	for i := range ips {
+		if ips[i].Type.ValueString() == "private-ip" {
+			ips[i].Address = types.StringUnknown()
+			ips[i].Id = types.StringUnknown()
+			ips[i].CIDR = types.StringUnknown()
+		}
+
+		ipAttr, ipDiags := types.ObjectValueFrom(ctx, ips[i].AttributeTypes(), ips[i])
+		d.Append(ipDiags...)
+		if d.HasError() {
+			return d
+		}
+
+		ipsAttrs = append(ipsAttrs, ipAttr)
+	}
+
+	ipsTf, ipsDiags := types.SetValue(types.ObjectType{AttrTypes: ipAddressFlatResourceModel{}.AttributeTypes()}, ipsAttrs)
+	d.Append(ipsDiags...)
+	if d.HasError() {
+		return d
+	}
+
+	m.plan.IpAddresses = ipsTf
+	return d
+}
+
+func (m *serverReinstallModifier) modifyImage(ctx context.Context) diag.Diagnostics {
+	var d diag.Diagnostics
+
+	img, err := m.defaultImage(ctx, m.plan.Plan.ValueString())
+	if err != nil {
+		d.AddError("No Default Plan Image",
+			fmt.Sprintf("Failed to get a default image for plan: %s.", err.Error()))
+		return d
+	}
+	m.plan.Image = types.StringValue(img)
+
+	return d
+}
+
+// defaultImage gets a default OS image for the given server plan.
+// Specifically, it tries to find the latest Ubuntu version,
+// with a fallback to a random image.
+func (m *serverReinstallModifier) defaultImage(ctx context.Context, plan string) (string, error) {
+	images, _, err := m.lister.List(ctx, plan, nil)
+	if err != nil {
+		return "", err
+	}
+
+	var newImage string
+	for _, image := range images {
+		// Try to pick the latest ubuntu version.
+		if strings.HasPrefix(image.Slug, "ubuntu") && image.Slug > newImage {
+			newImage = image.Slug
+		}
+	}
+
+	// If for some reason we couldn't find an image, try to fall back to the first
+	// one in the slice.
+	if newImage == "" {
+		if len(images) == 0 {
+			return "", fmt.Errorf("no images found for plan %q", plan)
+		}
+		newImage = images[0].Slug
+	}
+
+	return newImage, nil
+}
+
+func (m *serverReinstallModifier) appendNotAllowedErrors(d *diag.Diagnostics) {
+	var errs diag.Diagnostics
+
+	const (
+		summary = "Re-installation not allowed."
+		detail  = "Updating `%s` requires `allow_reinstall` to be enabled."
+	)
+	if !m.plan.Image.Equal(m.state.Image) {
+		d.AddAttributeError(path.Root("image"), summary, fmt.Sprintf(detail, "image"))
+	}
+	if !m.plan.OSPartitionSize.Equal(m.state.OSPartitionSize) {
+		d.AddAttributeError(path.Root("os_partition_size"), summary, fmt.Sprintf(detail, "os_partition_size"))
+	}
+	if !m.plan.SSHKeyIds.Equal(m.state.SSHKeyIds) {
+		d.AddAttributeError(path.Root("ssh_key_ids"), summary, fmt.Sprintf(detail, "ssh_key_ids"))
+	}
+	if !m.plan.UserData.Equal(m.state.UserData) {
+		d.AddAttributeError(path.Root("user_data"), summary, fmt.Sprintf(detail, "user_data"))
+	}
+	if !m.plan.IPXE.Equal(m.state.IPXE) {
+		d.AddAttributeError(path.Root("ipxe"), summary, fmt.Sprintf(detail, "ipxe"))
+	}
+	if !m.plan.PersistIPXE.Equal(m.state.PersistIPXE) {
+		d.AddAttributeError(path.Root("persist_ipxe"), summary, fmt.Sprintf(detail, "persist_ipxe"))
+	}
+
+	d.Append(errs...)
 }
