@@ -12,9 +12,9 @@ import (
 	"github.com/cherryservers/cherrygo/v4"
 )
 
-// is404Error returns true if err is an HTTP 404 error.
-func is404Error(httpResponse *cherrygo.Response) bool {
-	return httpResponse.StatusCode == 404
+// isGone returns true if resp is an HTTP 404 error.
+func isGone(httpResponse *cherrygo.Response) bool {
+	return httpResponse != nil && httpResponse.StatusCode == 404
 }
 
 func serverHostnameToID(ctx context.Context, hostname string, projectID int, ServerService cherrygo.ServersService) (int, error) {

@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -16,8 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"strconv"
-	"strings"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -58,7 +59,6 @@ func (d *projectResourceModel) populateState(project cherrygo.Project, ctx conte
 	diags.Append(bgpDiags...)
 
 	d.Name = types.StringValue(project.Name)
-
 }
 
 func (r *projectResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -108,7 +108,9 @@ func (r *projectResource) Schema(ctx context.Context, req resource.SchemaRequest
 						map[string]attr.Value{
 							"enabled":   types.BoolValue(false),
 							"local_asn": types.Int64Unknown(),
-						})),
+						},
+					),
+				),
 			},
 			"id": schema.StringAttribute{
 				Description: "Project identifier.",
@@ -182,7 +184,7 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	projectId, _ := strconv.Atoi(data.Id.ValueString())
 	project, projectGetResp, err := r.client.Projects.Get(ctx, projectId, nil)
 	if err != nil {
-		if is404Error(projectGetResp) {
+		if isGone(projectGetResp) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -260,7 +262,6 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	ctx = tflog.SetField(ctx, "project_id", projectId)
 	tflog.Trace(ctx, "deleted a resource")
-
 }
 
 // ImportState workaround for project not knowing its teamID.

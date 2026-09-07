@@ -734,7 +734,7 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	server, serverGetResp, err := r.client.Servers.Get(ctx, serverID, nil)
 	if err != nil {
-		if is404Error(serverGetResp) {
+		if isGone(serverGetResp) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
