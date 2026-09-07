@@ -99,9 +99,8 @@ func testAccCheckCherryServersSSHKeyDestroy(ctx context.Context, s *terraform.St
 		}
 
 		sshKey, resp, err := client.SSHKeys.Get(ctx, sshID, nil)
-
 		if err != nil {
-			if is404Error(resp) {
+			if isGone(resp) {
 				continue
 			}
 
