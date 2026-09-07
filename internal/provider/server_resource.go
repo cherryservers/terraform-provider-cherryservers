@@ -250,9 +250,9 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"persist_ipxe": schema.BoolAttribute{
 				Description: "Enable persisting the universal iPXE image between server boots. " +
-				 "See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers. " +
-				 "Updating this attribute requires a server re-install.",
-				Optional:    true,
+					"See https://www.cherryservers.com/knowledge/docs/compute/configuration-management/ipxe#how-ipxe-works-with-cherry-servers. " +
+					"Updating this attribute requires a server re-install.",
+				Optional: true,
 				Validators: []validator.Bool{
 					boolvalidator.AlsoRequires(path.MatchRoot("ipxe")),
 				},

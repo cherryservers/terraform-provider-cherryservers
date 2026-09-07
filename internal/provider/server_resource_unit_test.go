@@ -68,11 +68,11 @@ func newReinstallAttributeCases() []struct {
 func TestReinstallModifierDoesNotRequireAllowReinstallForCreation(t *testing.T) {
 	for _, tc := range newReinstallAttributeCases() {
 		r := serverResource{client: &cherrygo.Client{}}
-		s := resourceSchema(t, &r)
+		s := schemaFromResourceMust(t, &r)
 
 		req := resource.ModifyPlanRequest{
-			Plan:   planFromModelMust(t, tc.plan, s),
-			Config: configFromModelMust(t, tc.plan, s),
+			Plan:   planFromResourceModelMust(t, tc.plan, &r),
+			Config: configFromResourceModelMust(t, tc.plan, &r),
 		}
 		resp := newModifyResp(s)
 
@@ -88,10 +88,10 @@ func TestServerReinstallModifierSetsUnknownPowerState(t *testing.T) {
 		tc.plan.AllowReinstall = types.BoolValue(true)
 		t.Run(tc.name, func(t *testing.T) {
 			r := serverResource{client: &cherrygo.Client{}}
-			s := resourceSchema(t, &r)
+			s := schemaFromResourceMust(t, &r)
 
 			req := newModifyReqFromModels(
-				t, newServerModel(nil), newServerModel(nil), tc.plan, s,
+				t, newServerModel(nil), newServerModel(nil), tc.plan, &r,
 			)
 			resp := newModifyResp(s)
 
@@ -154,10 +154,10 @@ func TestServerReinstallModifierSetsUnknownPrivateIP(t *testing.T) {
 			tc.plan.IpAddresses = ips
 
 			r := serverResource{client: &cherrygo.Client{}}
-			s := resourceSchema(t, &r)
+			s := schemaFromResourceMust(t, &r)
 
 			req := newModifyReqFromModels(
-				t, newServerModel(nil), newServerModel(nil), tc.plan, s,
+				t, newServerModel(nil), newServerModel(nil), tc.plan, &r,
 			)
 			resp := newModifyResp(s)
 
@@ -195,7 +195,7 @@ func TestServerReinstallModifierSetsUnknownPrivateIP(t *testing.T) {
 
 func TestServerReinstallModifierSetsSSHToEmptyWhenInstallingIPXE(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
+	s := schemaFromResourceMust(t, &r)
 
 	state := newServerModel(func(m *serverResourceModel) {
 		m.Image = types.StringValue("not-ipxe")
@@ -205,7 +205,7 @@ func TestServerReinstallModifierSetsSSHToEmptyWhenInstallingIPXE(t *testing.T) {
 		m.IPXE = types.StringValue("test")
 		m.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{types.StringValue("1")})
 	})
-	req := newModifyReqFromModels(t, newServerModel(nil), state, plan, s)
+	req := newModifyReqFromModels(t, newServerModel(nil), state, plan, &r)
 	resp := newModifyResp(s)
 
 	r.ModifyPlan(t.Context(), req, &resp)
@@ -221,7 +221,7 @@ func TestServerReinstallModifierSetsSSHToEmptyWhenInstallingIPXE(t *testing.T) {
 
 func TestServerReinstallModifierRetainsSSHWhenNonIPXE(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
+	s := schemaFromResourceMust(t, &r)
 
 	state := newServerModel(func(m *serverResourceModel) {
 		m.Image = types.StringValue("not-ipxe")
@@ -231,7 +231,7 @@ func TestServerReinstallModifierRetainsSSHWhenNonIPXE(t *testing.T) {
 		m.Image = types.StringValue("another-not-ipxe")
 		m.SSHKeyIds = types.SetValueMust(types.StringType, []attr.Value{types.StringValue("1")})
 	})
-	req := newModifyReqFromModels(t, newServerModel(nil), state, plan, s)
+	req := newModifyReqFromModels(t, newServerModel(nil), state, plan, &r)
 	resp := newModifyResp(s)
 
 	r.ModifyPlan(t.Context(), req, &resp)
@@ -290,7 +290,7 @@ func TestServerReinstallModifierSetsDefaultImageWhenInstallingNonIPXE(t *testing
 
 	for _, tc := range cases {
 		r := serverResource{client: &cherrygo.Client{Images: &tc.lister}}
-		s := resourceSchema(t, &r)
+		s := schemaFromResourceMust(t, &r)
 
 		state := newServerModel(func(m *serverResourceModel) {
 			m.Image = types.StringValue("custom_ipxe_install")
@@ -299,7 +299,7 @@ func TestServerReinstallModifierSetsDefaultImageWhenInstallingNonIPXE(t *testing
 			m.AllowReinstall = types.BoolValue(true)
 			m.Plan = types.StringValue("test-plan")
 		})
-		req := newModifyReqFromModels(t, newServerModel(nil), state, plan, s)
+		req := newModifyReqFromModels(t, newServerModel(nil), state, plan, &r)
 		resp := newModifyResp(s)
 
 		t.Run(tc.name, func(t *testing.T) {
@@ -336,7 +336,7 @@ func TestServerReinstallModifierReturnsErrorWhenDefaultImageFails(t *testing.T) 
 
 	for _, tc := range cases {
 		r := serverResource{client: &cherrygo.Client{Images: &tc.lister}}
-		s := resourceSchema(t, &r)
+		s := schemaFromResourceMust(t, &r)
 
 		state := newServerModel(func(m *serverResourceModel) {
 			m.Image = types.StringValue("custom_ipxe_install")
@@ -345,7 +345,7 @@ func TestServerReinstallModifierReturnsErrorWhenDefaultImageFails(t *testing.T) 
 			m.AllowReinstall = types.BoolValue(true)
 			m.Plan = types.StringValue("test-plan")
 		})
-		req := newModifyReqFromModels(t, newServerModel(nil), state, plan, s)
+		req := newModifyReqFromModels(t, newServerModel(nil), state, plan, &r)
 		resp := newModifyResp(s)
 
 		t.Run(tc.name, func(t *testing.T) {
@@ -366,7 +366,7 @@ func TestServerReinstallModifierReturnsErrorWhenDefaultImageFails(t *testing.T) 
 
 func TestServerReinstallModifierDoesNotOverrideImageWhenInstallingNonIPXE(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
+	s := schemaFromResourceMust(t, &r)
 
 	state := newServerModel(func(m *serverResourceModel) {
 		m.Image = types.StringValue("custom_ipxe_install")
@@ -379,7 +379,7 @@ func TestServerReinstallModifierDoesNotOverrideImageWhenInstallingNonIPXE(t *tes
 		m.Plan = types.StringValue("test-plan")
 		m.Image = types.StringValue("test-img")
 	})
-	req := newModifyReqFromModels(t, config, state, plan, s)
+	req := newModifyReqFromModels(t, config, state, plan, &r)
 	resp := newModifyResp(s)
 
 	r.ModifyPlan(t.Context(), req, &resp)
@@ -392,8 +392,8 @@ func TestServerReinstallModifierDoesNotOverrideImageWhenInstallingNonIPXE(t *tes
 
 func TestServerModifyPlanReturnsErrorWithInvalidRequests(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
-	okVal := planFromModelMust(t, newServerModel(nil), s).Raw
+	s := schemaFromResourceMust(t, &r)
+	okVal := planFromResourceModelMust(t, newServerModel(nil), &r).Raw
 
 	cases := []struct {
 		name                         string
@@ -441,7 +441,7 @@ func TestServerModifyPlanReturnsErrorWithInvalidRequests(t *testing.T) {
 
 func TestServerModifyPlanSkipsDeleteRequests(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
+	s := schemaFromResourceMust(t, &r)
 
 	var req resource.ModifyPlanRequest
 	resp := newModifyResp(s)
@@ -453,7 +453,7 @@ func TestServerModifyPlanSkipsDeleteRequests(t *testing.T) {
 
 func TestServerModifyPlanSetsIPXEImageWhenIPXEIsPlanned(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
+	s := schemaFromResourceMust(t, &r)
 	planModel := newServerModel(func(m *serverResourceModel) {
 		m.AllowReinstall = types.BoolValue(true)
 		m.IPXE = types.StringValue("test")
@@ -469,15 +469,15 @@ func TestServerModifyPlanSetsIPXEImageWhenIPXEIsPlanned(t *testing.T) {
 		},
 		{
 			name:  "update request",
-			state: stateFromModelMust(t, newServerModel(nil), s),
+			state: stateFromResourceModelMust(t, newServerModel(nil), &r),
 		},
 	}
 
 	for _, tc := range cases {
 		req := resource.ModifyPlanRequest{
 			State:  tc.state,
-			Config: configFromModelMust(t, newServerModel(nil), s),
-			Plan:   planFromModelMust(t, planModel, s),
+			Config: configFromResourceModelMust(t, newServerModel(nil), &r),
+			Plan:   planFromResourceModelMust(t, planModel, &r),
 		}
 		resp := newModifyResp(s)
 
@@ -495,14 +495,14 @@ func TestServerModifyPlanSetsIPXEImageWhenIPXEIsPlanned(t *testing.T) {
 
 func TestServerModifyPlanDoesNothingWhenUpdatingWithoutReinstall(t *testing.T) {
 	r := serverResource{client: &cherrygo.Client{}}
-	s := resourceSchema(t, &r)
+	s := schemaFromResourceMust(t, &r)
 	planModel := newServerModel(func(m *serverResourceModel) {
 		m.Hostname = types.StringValue("test")
 	})
 	stateModel := newServerModel(func(m *serverResourceModel) {
 		m.Hostname = types.StringValue("old")
 	})
-	req := newModifyReqFromModels(t, planModel, stateModel, planModel, s)
+	req := newModifyReqFromModels(t, planModel, stateModel, planModel, &r)
 	resp := newModifyResp(s)
 
 	r.ModifyPlan(t.Context(), req, &resp)
@@ -512,52 +512,6 @@ func TestServerModifyPlanDoesNothingWhenUpdatingWithoutReinstall(t *testing.T) {
 	require.Empty(t, resp.Plan.Get(t.Context(), &gotPlan))
 
 	assert.Equal(t, planModel, gotPlan)
-}
-
-func configFromModelMust(t *testing.T, m any, s schema.Schema) tfsdk.Config {
-	t.Helper()
-
-	// tfsdk.Config doesn't have Set, due to its immutable nature,
-	// so we need this workaround.
-	plan := tfsdk.Plan{
-		Schema: s,
-	}
-	diags := plan.Set(t.Context(), m)
-	require.Empty(t, diags)
-
-	return tfsdk.Config{Raw: plan.Raw, Schema: s}
-}
-
-func planFromModelMust(t *testing.T, m any, s schema.Schema) tfsdk.Plan {
-	t.Helper()
-
-	plan := tfsdk.Plan{
-		Schema: s,
-	}
-	diags := plan.Set(t.Context(), m)
-	require.Empty(t, diags)
-
-	return plan
-}
-
-func stateFromModelMust(t *testing.T, m any, s schema.Schema) tfsdk.State {
-	t.Helper()
-
-	state := tfsdk.State{
-		Schema: s,
-	}
-	diags := state.Set(t.Context(), m)
-	require.Empty(t, diags)
-
-	return state
-}
-
-func resourceSchema(t *testing.T, r resource.Resource) schema.Schema {
-	t.Helper()
-
-	var resp resource.SchemaResponse
-	r.Schema(t.Context(), resource.SchemaRequest{}, &resp)
-	return resp.Schema
 }
 
 // newServerModel runs f over a model with zero valued fields set to null,
@@ -603,11 +557,11 @@ func newServerModel(f func(m *serverResourceModel)) serverResourceModel {
 	return m
 }
 
-func newModifyReqFromModels[T serverResourceModel](t *testing.T, config, state, plan T, s schema.Schema) resource.ModifyPlanRequest {
+func newModifyReqFromModels[T serverResourceModel](t *testing.T, config, state, plan T, r resource.Resource) resource.ModifyPlanRequest {
 	return resource.ModifyPlanRequest{
-		Config: configFromModelMust(t, config, s),
-		Plan:   planFromModelMust(t, plan, s),
-		State:  stateFromModelMust(t, state, s),
+		Config: configFromResourceModelMust(t, config, r),
+		Plan:   planFromResourceModelMust(t, plan, r),
+		State:  stateFromResourceModelMust(t, state, r),
 	}
 }
 
