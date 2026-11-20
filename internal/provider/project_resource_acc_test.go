@@ -90,9 +90,8 @@ func testAccCheckCherryServersProjectDestroy(ctx context.Context, s *terraform.S
 		}
 		// Try to get the project
 		_, resp, err := client.Projects.Get(ctx, projectID, nil)
-
 		if err != nil {
-			if is404Error(resp) {
+			if isGone(resp) {
 				continue
 			}
 

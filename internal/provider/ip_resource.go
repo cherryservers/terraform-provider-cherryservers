@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/cherryservers/cherrygo/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -16,7 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"strconv"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -304,7 +305,7 @@ func (r *ipResource) Read(ctx context.Context, req resource.ReadRequest, resp *r
 
 	ip, ipGetResp, err := r.client.IPAddresses.Get(ctx, data.Id.ValueString(), nil)
 	if err != nil {
-		if is404Error(ipGetResp) {
+		if isGone(ipGetResp) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -336,7 +337,7 @@ func (r *ipResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		RoutedTo: data.TargetIPID.ValueString(),
 	}
 
-	//The API returns error 500 if update is called with the same ptr_record as before, so check if it has changed.
+	// The API returns error 500 if update is called with the same ptr_record as before, so check if it has changed.
 	var ptrState types.String
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("ptr_record"), &ptrState)...)
 
@@ -418,7 +419,6 @@ func (r *ipResource) Delete(ctx context.Context, req resource.DeleteRequest, res
 
 	ctx = tflog.SetField(ctx, "ip_id", data.Id)
 	tflog.Trace(ctx, "deleted a resource")
-
 }
 
 func (r *ipResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

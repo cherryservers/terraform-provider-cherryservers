@@ -336,7 +336,7 @@ func testAccCheckCherryServersServerDestroy(ctx context.Context, s *terraform.St
 
 		server, resp, err := client.Servers.Get(ctx, serverID, nil)
 		if err != nil {
-			if is404Error(resp) {
+			if isGone(resp) {
 				continue
 			}
 
